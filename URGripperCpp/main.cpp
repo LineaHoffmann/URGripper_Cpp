@@ -4,6 +4,7 @@
 
 int main()
 {
+    std::cout << "Hej" << std::endl;
     std::cout << "===== Begin =====" << std::endl;
 
     // L298 should not be created more than once,
