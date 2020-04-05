@@ -7,13 +7,14 @@ class ADC0832
 {
 public:
     ADC0832(unsigned int n, unsigned int uwait);
-    unsigned int readADC(unsigned int channel);
+    uint8_t readADC(unsigned int channel);
+
 private:
     GPIO::DigitalIn dout_;
     GPIO::DigitalOut din_, clk_, cs_;
     unsigned int validate(unsigned int);
     unsigned int uwait_;
-    unsigned int rd_{0};
+    uint8_t rd_{0};
     void clock(unsigned int);
 };
 
