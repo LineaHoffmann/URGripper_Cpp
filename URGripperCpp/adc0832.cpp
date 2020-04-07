@@ -3,42 +3,61 @@
 #include <stdexcept>
 
 ADC0832::ADC0832(unsigned int n, unsigned int uwait) :
+    // Select pins based on n
     dout_((validate(n) == 0 ? 17 : 9),GPIO::GPIO_PULL::OFF,std::chrono::microseconds(10),std::chrono::microseconds(5)),
     din_((validate(n) == 0 ? 27 : 11)),
     clk_((validate(n) == 0 ? 22 : 5)),
     cs_((validate(n) == 0 ? 10 : 6)),
-    uwait_(uwait/2){}
+    uwait_(uwait/2){
+    // Start all outputs low
+    din_.off();clk_.off();cs_.off();
+}
 
-unsigned int ADC0832::readADC(unsigned int channel) {
+uint8_t ADC0832::readADC(unsigned int channel) {
     validate(channel);
-    // Total function takes 2 setup + 8 read + 2*5us
+    rd_ = 0; // Reset from previous reading
     // Start clock low
     clk_.off();
     // Reset with CS high -> low
-    clock(10);
+    cs_.on();
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+    cs_.off();
     // Startbit HIGH
     din_.on();
-    // Clock 1
-    clock(uwait_);
-    // SGL bit HIGH -> Two single ended ADCs
-    din_.on();
-    // Clock 2
-    clock(uwait_);
-    // Select if channel 0 or 1 on ADC
-    if (channel % 2 == 0) din_.on();
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+    clk_.on(); // Clock rising 1
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+    clk_.off(); // Clock falling 1
+    din_.on(); // 1 = SGL | 0 = DIF
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+    clk_.on(); // Clock 2 rising edge
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+    clk_.off(); // Clock 2 falling edge
+    if (channel % 2 == 0) din_.on(); // Select if channel 0 or 1
     else din_.off();
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+    clk_.on(); // Clock 3 rising edge
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+    clk_.off(); //Clock 3 falling edge
+    std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+
+    // Data starts here.
+    // First read bit is not important, but useable for error check
+    // If read bit is low, good, if it is tristate or high, bad.
+//    unsigned int err = dout_.get_state();
+//    if (err) return 0;
+
     for (int i = 0; i < 8; ++i) {
-        // Loop for 8 bits
-        // Clock once to advance
-        clock(uwait_);
-        // Shift input variable left
-        rd_ <<= 1;
-        // Add 1 if DOUT is high
-        if (dout_.get_state()) rd_ |= 0x1;
+        clk_.on(); // Clock (i + 4) rising edge
+        std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+        clk_.off(); // Clock (i + 4) falling edge
+        std::this_thread::sleep_for(std::chrono::microseconds(uwait_));
+        rd_ <<= 1; // Shift rd
+        dout_.triggered(); // get_state doesn't work without calling this too? It's a bug.
+        if (dout_.get_state()) {
+            rd_ |= 0x1; // Add one to rd_ if input if high
+        }
     }
-    // Reset CS
-    cs_.on();
-    // Return read value
     return rd_;
 }
 
@@ -46,10 +65,4 @@ unsigned int ADC0832::validate(unsigned int n) {
     // If n is anything other than 0 or 1, it throws runtime error
     if (!(n == 0 || n == 1)) throw std::invalid_argument("Only channels 0 and 1 are available.");
     return n;
-}
-void ADC0832::clock(unsigned int c) {
-    clk_.on();
-    std::this_thread::sleep_for(std::chrono::microseconds(c));
-    clk_.off();
-    std::this_thread::sleep_for(std::chrono::microseconds(c));
 }
