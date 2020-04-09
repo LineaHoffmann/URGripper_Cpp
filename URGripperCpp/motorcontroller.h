@@ -22,7 +22,6 @@ public:
     //metode til udregning af position
     unsigned int calcPosition();
 
-
     //support metoder
     unsigned int getPotReading(unsigned int channel);
 
@@ -32,17 +31,9 @@ public:
 
     void changePotRange(unsigned int lower, unsigned int upper);
 
-
-
-
     //metode til force udregning
     //til linea og Søren
     unsigned int calcForce();
-
-
-
-
-
 
 
 private:
@@ -50,6 +41,11 @@ private:
     unsigned int offsetPosition{0};
     unsigned int maxForce;
     std::array<unsigned int, 2> potRange{20,100};
+
+    //wheatstone
+    unsigned int gain{1000}; //gain fra 1. stage
+    unsigned int offset;
+    unsigned int slope;
 
     //igen er i tvivl som controlleren skal styre dette, eller og det skal være "hardcoded"
     L298 _driver;
