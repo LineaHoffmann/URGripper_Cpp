@@ -12,13 +12,8 @@ SOURCES += \
     l298.cpp \
     adc0832.cpp \
     motorcontroller.cpp \
-<<<<<<< HEAD
     myserver.cpp \
     mythread.cpp
-=======
-    mythread.cpp \
-    myserver.cpp
->>>>>>> development
 unix:!macx: LIBS += -lcppgpio
 unix:!macx: LIBS += -lpthread
 
