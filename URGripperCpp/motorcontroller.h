@@ -18,10 +18,8 @@ public:
     //så maskinen ikke bliver skadet. (den vil også tjekke op mod en "hardcoded maxForce"
     bool move(unsigned int toPosition, unsigned int force);
 
-
     //metode til udregning af position
     unsigned int calcPosition();
-
 
     //support metoder
     unsigned int getPotReading(unsigned int channel);
@@ -32,24 +30,24 @@ public:
 
     void changePotRange(unsigned int lower, unsigned int upper);
 
+    unsigned int getWheatstoneReading( unsigned int channel);
 
-
-
-    //metode til force udregning
-    //til linea og Søren
     unsigned int calcForce();
 
-
-
-
-
-
+    double getOffset();
+    double getSlope();
 
 private:
     unsigned int position;
     unsigned int offsetPosition{0};
     unsigned int maxForce;
     std::array<unsigned int, 2> potRange{20,100};
+
+    //wheatstone
+    unsigned int gain{1000}; //gain fra 1. stage
+    double offset{0.4844}; // Skal ændres efter korrekt graf
+    double slope {37.918}; // skal ændres efter korrekt graf.
+    unsigned int force;
 
     //igen er i tvivl som controlleren skal styre dette, eller og det skal være "hardcoded"
     L298 _driver;
