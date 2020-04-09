@@ -106,13 +106,46 @@ void MotorController::changePotRange(unsigned int lower, unsigned int upper)
     potRange[1] = upper;
 }
 
+unsigned int MotorController::getWheatstoneReading(unsigned int channel)
+    {
+        unsigned int tempReading = _forceAdc.readADC(channel);
+        if (tempReading <= 256 && tempReading >= 0)
+        {
+            return tempReading;
+        }
+        else
+        {
+            std::cout << "Wheatstone reading not in accepted rang. " << std:endl;
+            return 0;
+        }
+    }
 
+double MotorController::getOffset()
+{
+    return offset;
 
+}
 
-
+double MotorController::getSlope()
+{
+    return slope;
+}
 
 
 unsigned int MotorController::calcForce()
 {
+    unsigned int wheatstoneReading = this ->getWheatstoneReading(2);
+    if (wheatstoneReading == 0)
+    {
+        // Error in reading
+        return 0;
+    }
+    else
+    {
+        force = static_cast<unsigned int>((slope*wheatstoneReading) - offset);
+        return force;
+    }
 
 }
+
+
