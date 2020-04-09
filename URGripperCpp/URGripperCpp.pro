@@ -12,8 +12,8 @@ SOURCES += \
     l298.cpp \
     adc0832.cpp \
     motorcontroller.cpp \
-    myServer.cpp \
-    myThread.cpp
+    mythread.cpp \
+    myserver.cpp
 unix:!macx: LIBS += -lcppgpio
 unix:!macx: LIBS += -lpthread
 
@@ -21,5 +21,5 @@ HEADERS += \
     l298.h \
     adc0832.h \
     motorcontroller.h \
-    myServer.h \
-    myThread.h
+    myserver.h \
+    mythread.h
