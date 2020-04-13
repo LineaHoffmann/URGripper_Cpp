@@ -1,6 +1,12 @@
 #include <iostream>
+#include <chrono>
+//#include <memory>
+
 #include "adc0832.h"
 #include "l298.h"
+//#include "motorcontroller.h"
+//#include "myserver.h"
+
 
 int main()
 {
@@ -11,7 +17,8 @@ int main()
     // it will cause problems in the CppGPIO library
     // Enable pin has soft PWM at ~500Hz
     // PWM dutycycle range is [0,20] in integers
-    L298 hb;
+    L298 driver;
+//    std::shared_ptr<L298> driverPtr = std::make_shared<L298>(driver);
     std::cout << "H-Bridge succesfully initialized." << std::endl;
 
     // ADCs requires setting clock cycle period in constructor (in us)
@@ -19,18 +26,28 @@ int main()
     // Sample time is 10 clock cycles + reset + c++ lines (I think)
     // Clocks outside 10kHz-400kHz are not guaranteed in datasheet
     ADC0832 adc0(0,100);
-    ADC0832 adc1(1,1000*1000);
+    ADC0832 adc1(1,100);
+//    std::shared_ptr<ADC0832> adc0Ptr = std::make_shared<ADC0832>(adc0);
+//    std::shared_ptr<ADC0832> adc1Ptr = std::make_shared<ADC0832>(adc1);
     std::cout << "Both ADCs succesfully initialized." << std::endl;
-    unsigned int rd;
-    int n = 1000;
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    while (n > 0) {
-        rd = adc0.readADC(0);
-        --n;
-    }
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Time per read is: " << std::chrono::duration_cast<std::chrono::microseconds>(end-begin).count()/1000.0
-              << " [us], at 1000 readings" << std::endl;
+
+    // Motor Controller
+//    MotorController& motorControl = MotorController::buildController(driverPtr,adc0Ptr,adc1Ptr);
+//    std::unique_ptr<MotorController> motorControlPtr = std::make_unique<MotorController>(motorControl);
+    std::cout << "Motor controller object seemingly initialized." << std::endl;
+
+    // TCP Server Threading
+//    MyServer tcpServer;
+//    tcpServer.startServer();
+
+    // Program loop
+//    bool escFlag = false;
+//    while (!escFlag) {
+//        if (tcpServer.hasPendingConnections()) {
+//
+//        }
+//    }
+
 
     std::cout << "===== End =====" << std::endl;
     return 0;

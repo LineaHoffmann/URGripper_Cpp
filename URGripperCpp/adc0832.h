@@ -6,16 +6,16 @@
 class ADC0832
 {
 public:
-    ADC0832(unsigned int n, unsigned int uwait);
-    uint8_t readADC(unsigned int channel);
+    ADC0832(uint8_t n, uint32_t uwait);
+    uint8_t readADC(uint8_t channel);
+    uint8_t readADC(uint8_t channel, uint8_t samples);
 
 private:
     GPIO::DigitalIn dout_;
     GPIO::DigitalOut din_, clk_, cs_;
-    unsigned int validate(unsigned int);
-    unsigned int uwait_;
-    uint8_t rd_{0};
-    void clock(unsigned int);
+    uint8_t validate(uint8_t);
+    uint32_t uwait_;
+    uint8_t rd_;
 };
 
 #endif // ADC0832_H

@@ -1,21 +1,22 @@
-#include <cppgpio.hpp>
-#include "adc0832.h"
 #include <stdexcept>
+#include <cppgpio.hpp>
+#include <cmath>
 
-ADC0832::ADC0832(unsigned int n, unsigned int uwait) :
+#include "adc0832.h"
+
+ADC0832::ADC0832(uint8_t n, uint32_t uwait) :
     // Select pins based on n
     dout_((validate(n) == 0 ? 17 : 9),GPIO::GPIO_PULL::OFF,std::chrono::microseconds(10),std::chrono::microseconds(5)),
     din_((validate(n) == 0 ? 27 : 11)),
     clk_((validate(n) == 0 ? 22 : 5)),
     cs_((validate(n) == 0 ? 10 : 6)),
-    uwait_(uwait/2){
+    uwait_((uwait = 50)/2) {
     // Start all outputs low
     din_.off();clk_.off();cs_.off();
 }
-
-uint8_t ADC0832::readADC(unsigned int channel) {
+uint8_t ADC0832::readADC(uint8_t channel) {
     validate(channel);
-    rd_ = 0; // Reset from previous reading
+    rd_ = 0; // Reset from previous reading    
     // Start clock low
     clk_.off();
     // Reset with CS high -> low
@@ -60,8 +61,15 @@ uint8_t ADC0832::readADC(unsigned int channel) {
     }
     return rd_;
 }
-
-unsigned int ADC0832::validate(unsigned int n) {
+uint8_t ADC0832::readADC(uint8_t channel, uint8_t samples) {
+    if (samples <= 0) return 0;
+    uint16_t rdavg{0};
+    for (uint8_t i = 0; i < samples; ++i) {
+        rdavg += readADC(channel);
+    }
+    return rd_ = static_cast<uint8_t>(rdavg / samples);
+}
+uint8_t ADC0832::validate(uint8_t n) {
     // If n is anything other than 0 or 1, it throws runtime error
     if (!(n == 0 || n == 1)) throw std::invalid_argument("Only channels 0 and 1 are available.");
     return n;
