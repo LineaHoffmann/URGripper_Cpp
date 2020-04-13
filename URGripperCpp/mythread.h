@@ -4,12 +4,13 @@
 #include <QThread>
 #include <QTcpSocket>
 #include <QDebug>
+#include <string>
 
 class MyThread : public QThread
 {
     Q_OBJECT
 public:
-    explicit MyThread(qintptr ID, QObject *parent = 0);
+    explicit MyThread(qintptr ID, QObject *parent = nullptr);
 
     void run();
 
@@ -17,7 +18,7 @@ signals:
     void error(QTcpSocket::SocketError socketerror);
 
 public slots:
-    void readyRead();
+    std::string readyRead();
     void disconnected();
 
 private:

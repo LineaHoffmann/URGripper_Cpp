@@ -8,7 +8,7 @@ CONFIG -= app_bundle
 # Borrowed from Qt-terminal project default
 DEFINES += QT_DEPRECATED_WARNINGS
 
-# For some std::make_unique
+# For std::make_unique
 QMAKE_CXXFLAGS += -std=c++14
 
 # Raspberry Pi and threading libs

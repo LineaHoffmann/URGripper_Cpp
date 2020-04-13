@@ -8,7 +8,7 @@ MyServer::MyServer(QObject *parent) :
 
 void MyServer::startServer()
 {
-    int port = 12345;
+    quint16 port = 12345;
 
     if(!this->listen(QHostAddress::Any, port))
     {
@@ -28,6 +28,11 @@ void MyServer::incomingConnection(qintptr socketDescriptor)
 
     // Hver forbindelse vil blive kørt i sin egen nye thread
     MyThread *thread = new MyThread(socketDescriptor, this);
+    if (thread->isFinished()) {
+        dataVec_.push_back(thread->readyRead());
+
+
+    }
 
     // Forbind signal/slot
     // Når en thread ikke bliver brugt mere, bliver den slettet
@@ -35,3 +40,11 @@ void MyServer::incomingConnection(qintptr socketDescriptor)
 
     thread->start();
 }
+
+std::string MyServer::getNextData() {
+    auto sStart = dataVec_.begin();
+    auto sStr = *sStart;
+    dataVec_.erase(sStart);
+    return sStr;
+}
+bool MyServer::hasNewData() {return !dataVec_.empty();}

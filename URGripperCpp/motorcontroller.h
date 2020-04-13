@@ -58,7 +58,7 @@ private:
     // Force variables
     uint8_t maxForce_;
     double forceFactor_;
-    uint8_t forceOffset_;
+    uint8_t forceOffset_{5};
 
     // Wheatstone
     unsigned int gain{1000}; //gain fra 1. stage

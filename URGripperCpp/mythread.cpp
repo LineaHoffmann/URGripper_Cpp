@@ -33,22 +33,17 @@ void MyThread::run()
     exec();
 }
 
-void MyThread::readyRead()
+std::string MyThread::readyRead()
 {
-    // Læser information
+    // Reads byte data
     QByteArray Data = socket->readAll();
-
-    // Svarer i vinduet
-    qDebug() << socketDescriptor << " Data in: " << Data;
-
-    socket->write(Data);
+    // Sends aknowledgement
+    socket->write("HALT");
+    return QString(Data).toStdString();
 }
 
 void MyThread::disconnected()
 {
-    qDebug() << socketDescriptor << " Disconnected";
-
-
     socket->deleteLater();
     exit(0);
 }

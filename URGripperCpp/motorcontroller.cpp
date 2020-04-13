@@ -12,7 +12,15 @@ MotorController& MotorController::buildController(std::shared_ptr<L298> driver, 
     return controller;
 }
 MotorController::MotorController(std::shared_ptr<L298> driver, std::shared_ptr<ADC0832> adc0, std::shared_ptr<ADC0832> adc1){
+    // Binding pointers to member variables
     driver_ = driver ; adc0_ = adc0; adc1_ = adc1;
+    // Setting different settings
+    forceOffset_ = 5;
+    forceFactor_ = 0.1;
+    positionOffset_ = 5;
+    positionFactor_ = 0.1;
+    positionRange_.first = 20;
+    positionRange_.second = 100;
 }
 
 /*
@@ -170,8 +178,8 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
         // Direction is used to determine which way we approach the target from
         // If moving in and target becomes >= to current position, stop and break
         // If moving out and target becomes <= to current position, stop and break
-        if (direction) {if (targetPosition >= rdPos) driver_->setRatio(0); break;}
-        else {if (targetPosition <= rdPos) driver_->setRatio(0); break;}
+        if (direction) {if (targetPosition >= rdPos) {driver_->setRatio(0); break;}}
+        else {if (targetPosition <= rdPos) {driver_->setRatio(0); break;}}
         // If force is more than measurable threshold, break
         if (rdForce > forceOffset_) break;
         // Move slowly, no force required
@@ -208,15 +216,19 @@ double MotorController::getPosition() const {
 }
 enum MOTOR_CONTROL_ERROR_CODE MotorController::setPositionOffset(double offset) {
     if (offset < 0) return state_ = MOTOR_CONTROL_ERROR_CODE::NEGATIVE_VALUE;
-    int temp = offset / positionFactor_;
-    if (temp > 256) return state_ = MOTOR_CONTROL_ERROR_CODE::OUT_OF_POSITION_OFFSET_RANGE;
+    int temp = static_cast<int>(offset / positionFactor_);
+    if (temp > 255) return state_ = MOTOR_CONTROL_ERROR_CODE::OUT_OF_POSITION_OFFSET_RANGE;
     positionOffset_ = static_cast<uint8_t>(temp);
     return state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }
 enum MOTOR_CONTROL_ERROR_CODE MotorController::changePositionRange(double upper, double lower) {
     if (upper < 0 || lower < 0) return state_ = MOTOR_CONTROL_ERROR_CODE::NEGATIVE_VALUE;
-    positionRange_.first = (lower / positionFactor_) + positionOffset_;
-    positionRange_.second = (upper / positionFactor_) + positionOffset_;
+    int temp1, temp2;
+    temp1 = static_cast<int>(lower / positionFactor_) + positionOffset_;
+    temp2 = static_cast<int>(upper / positionFactor_) + positionOffset_;
+    if (temp1 > 255 || temp2 > 255) return state_ = MOTOR_CONTROL_ERROR_CODE::OUT_OF_POSITION_RANGE;
+    positionRange_.first = static_cast<uint8_t>(temp1);
+    positionRange_.second = static_cast<uint8_t>(temp2);
     return state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }
 // Force controls
@@ -225,8 +237,8 @@ double MotorController::getForce() const {
 }
 enum MOTOR_CONTROL_ERROR_CODE MotorController::setMaxForce(double newMaxForce) {
     if (newMaxForce < 0) return state_ = MOTOR_CONTROL_ERROR_CODE::NEGATIVE_VALUE;
-    int temp = (newMaxForce / forceFactor_) + forceOffset_;
-    if (temp > 256) return state_ = MOTOR_CONTROL_ERROR_CODE::FORCE_ABOVE_MAX;
+    int temp = static_cast<int>(newMaxForce / forceFactor_) + forceOffset_;
+    if (temp > 255) return state_ = MOTOR_CONTROL_ERROR_CODE::FORCE_ABOVE_MAX;
     maxForce_ = static_cast<uint8_t>(temp);
     return state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }

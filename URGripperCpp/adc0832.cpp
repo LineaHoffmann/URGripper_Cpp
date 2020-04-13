@@ -10,7 +10,7 @@ ADC0832::ADC0832(uint8_t n, uint32_t uwait) :
     din_((validate(n) == 0 ? 27 : 11)),
     clk_((validate(n) == 0 ? 22 : 5)),
     cs_((validate(n) == 0 ? 10 : 6)),
-    uwait_((uwait = 50)/2) {
+    uwait_(uwait/2) {
     // Start all outputs low
     din_.off();clk_.off();cs_.off();
 }

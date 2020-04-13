@@ -6,7 +6,7 @@
 class ADC0832
 {
 public:
-    ADC0832(uint8_t n, uint32_t uwait);
+    ADC0832(uint8_t n, uint32_t uwait = 50);
     uint8_t readADC(uint8_t channel);
     uint8_t readADC(uint8_t channel, uint8_t samples);
 
