@@ -195,18 +195,20 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
     // If previous loop broke because of position, this should fall through
     // If not, we should be touching an object measureably
     while (!(i == 20) && rdForce < maxForce ) {
-        // Small delay
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         // Read force and position once per loop
         rdForce = adcForce_();
         rdPos = adcPosition_();
         // If moving in and target becomes >= to current position, break
         // If moving out and target becomes <= to current position, break
-        if (direction) {if (targetPosition >= rdPos) break;}
-        else {if (targetPosition <= rdPos) break;}
+        if (direction) {if (targetPosition >= rdPos) {driver_->setRatio(0); break;}}
+        else {if (targetPosition <= rdPos) {driver_->setRatio(0); break;}}
         // If read force is less than max, step up
         if (rdForce < maxForce) driver_->setRatio(++i);
+        // Small delay
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     };
+    // Turn off motor, gearing will hold it
+    if (i == 20) driver_->setRatio(0);
     // If we made it here, all may have gone well
     return state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }
