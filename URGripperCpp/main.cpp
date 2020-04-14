@@ -68,7 +68,7 @@ void startConsole() {
     // Set cursor invisible
     curs_set(0);
     // Set getch timeout in milliseconds
-    timeout(1);
+    timeout(0);
     // Show the window
     refresh();
 
@@ -112,7 +112,27 @@ static void printLog(std::string s) {
 /**
  * @brief Draw State window
  */
-void drawState() {
+void drawState(std::shared_ptr<L298> driver, std::shared_ptr<ADC0832> adc0, std::shared_ptr<ADC0832> adc1, std::shared_ptr<MotorController> moCtrl) {
+    // Writing ADC labels
+    mvwprintw(wState.win,2,2,"ADC Readings");
+    mvwprintw(wState.win,3,2,"Force:    ");
+    mvwprintw(wState.win,4,2,"Current:  ");
+    mvwprintw(wState.win,5,2,"Position: ");
+    mvwprintw(wState.win,6,2,"3.3V:     ");
+
+    // Writing error code labels
+    mvwprintw(wState.win,8,2,"Error Codes");
+    mvwprintw(wState.win,9,2,"Motor Driver:  ");
+    mvwprintw(wState.win,10,2,"ADC 0:         ");
+    mvwprintw(wState.win,11,2,"ADC 1:         ");
+    mvwprintw(wState.win,12,2,"Motor Control: ");
+    mvwprintw(wState.win,13,2,"TCP Server:    ");
+
+    // Get data from pointers and display in gui
+
+    // Refresh screen with updates
+    wrefresh(wState.win);
+    return;
 }
 
 
@@ -120,8 +140,7 @@ void drawState() {
 int main() {
     //GPIO::GPIOBase::simulation(true);
     // Time keeping for State Window framerate
-    // Thanks to Stack Overflow user Howard Hinnant
-    using Framerate = std::chrono::duration<std::chrono::steady_clock::rep, std::ratio<1, 60>>;
+    using Framerate = std::chrono::duration<std::chrono::steady_clock::rep,std::ratio<1,60>>;
     auto next = std::chrono::steady_clock::now() + Framerate{1};
 
     // Initialize the console GUI
@@ -148,7 +167,7 @@ int main() {
     // Creating Motor Controller object
     // This takes three shared pointers, 1xL298 + 2xADC0832
     MotorController& motorControl = MotorController::buildController(driverPtr,adc0Ptr,adc1Ptr);
-    std::unique_ptr<MotorController> motorControlPtr = std::make_unique<MotorController>(motorControl);
+    std::shared_ptr<MotorController> motorControlPtr = std::make_shared<MotorController>(motorControl);
     printLog("Motor Controller initialized");
 
     // Self testing? Periodic testing?
@@ -159,28 +178,27 @@ int main() {
     // TCP Server
     //MyServer tcpServer;
 
-
     // Program loop
     // If user presses x, loop exits
     // Each getch() hangs system for t = timeout
     while (getch() != 'x') {
         // This is the freerunning part of the loop
 
-
-
         // This part handles State window drawing
-        while (std::chrono::steady_clock::now() < next) {
+        while (std::chrono::steady_clock::now() > next) {
             next += Framerate{1};
-            drawState();
+            drawState(driverPtr,adc0Ptr,adc1Ptr,motorControlPtr);
         }
     }
 
-    //tcpServer.close();
-    // Clean up and close
     printLog("End reached");
     printLog("Press any button to stop");
     // Loop locks until keypress, to help see window before ending
-    while(!getch())
+    while(1) {
+        if (getch() != -1) break;
+    }
+    // Clean up and close
+    //tcpServer.close();
     delwin(wState.win);
     delwin(wLog.win);
     endwin();
