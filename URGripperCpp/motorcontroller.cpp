@@ -222,10 +222,12 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::setPositionOffset(double offset) 
     return state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }
 enum MOTOR_CONTROL_ERROR_CODE MotorController::changePositionRange(double upper, double lower) {
+    // Remember to correct for physical lower limit
     if (upper < 0 || lower < 0) return state_ = MOTOR_CONTROL_ERROR_CODE::NEGATIVE_VALUE;
     int temp1, temp2;
     temp1 = static_cast<int>(lower / positionFactor_) + positionOffset_;
     temp2 = static_cast<int>(upper / positionFactor_) + positionOffset_;
+    // Remember to correct for physical upper limit
     if (temp1 > 255 || temp2 > 255) return state_ = MOTOR_CONTROL_ERROR_CODE::OUT_OF_POSITION_RANGE;
     positionRange_.first = static_cast<uint8_t>(temp1);
     positionRange_.second = static_cast<uint8_t>(temp2);

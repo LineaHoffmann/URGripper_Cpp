@@ -1,12 +1,9 @@
 # Restructured slightly to support Qt libraries
-QT -= gui
-QT += network
-QT += core
 CONFIG += c++14 console
 CONFIG -= app_bundle
 
 # Borrowed from Qt-terminal project default
-DEFINES += QT_DEPRECATED_WARNINGS
+#DEFINES += QT_DEPRECATED_WARNINGS
 
 # For std::make_unique
 QMAKE_CXXFLAGS += -std=c++14
@@ -20,20 +17,16 @@ SOURCES += \
         main.cpp \
     l298.cpp \
     adc0832.cpp \
-    motorcontroller.cpp \
-    myserver.cpp \
-    mythread.cpp
+    motorcontroller.cpp
 
 # Header files
 HEADERS += \
     l298.h \
     adc0832.h \
-    motorcontroller.h \
-    myserver.h \
-    mythread.h
+    motorcontroller.h
 
 # Borrowed from Qt-terminal project default
 # Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
+#qnx: target.path = /tmp/$${TARGET}/bin
+#else: unix:!android: target.path = /opt/$${TARGET}/bin
+#!isEmpty(target.path): INSTALLS += target

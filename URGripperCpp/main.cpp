@@ -2,27 +2,26 @@
 #include <chrono>
 #include <memory>
 
-#include <QCoreApplication>
+//#include <QCoreApplication>
 
 #include "adc0832.h"
 #include "l298.h"
 #include "motorcontroller.h"
-#include "myserver.h"
 
 
-int main(int argc, char *argv[])
+int main()
 {
     std::cout << "Hej" << std::endl;
     std::cout << "===== Begin =====" << std::endl;
 
-    // L298 should not be created more than once,
-    // it will cause problems in the CppGPIO library
-    // Enable pin has soft PWM at ~500Hz
+    // Creating L298 hardware object
+    // Driver Enable pin has soft PWM at ~500Hz
     // PWM dutycycle range is [0,20] in integers
-    L298 driver;
+    L298& driver = L298::buildL298();
     std::shared_ptr<L298> driverPtr = std::make_shared<L298>(driver);
     std::cout << "H-Bridge succesfully initialized." << std::endl;
 
+    // Creating two ADC0832 hardware objects
     // ADCs requires setting clock cycle period in constructor (in us)
     // ADC default clock is 50us/ =~ about 0.7ms per read maybe? =~ around 20kHz
     // Clocks outside 10kHz-400kHz are not guaranteed in datasheet
@@ -32,40 +31,28 @@ int main(int argc, char *argv[])
     std::shared_ptr<ADC0832> adc1Ptr = std::make_shared<ADC0832>(adc1);
     std::cout << "Both ADCs succesfully initialized." << std::endl;
 
-    // Motor Controller
+    // Creating Motor Controller object
+    // This takes three shared pointers, 1xL298 + 2xADC0832
     MotorController& motorControl = MotorController::buildController(driverPtr,adc0Ptr,adc1Ptr);
     std::unique_ptr<MotorController> motorControlPtr = std::make_unique<MotorController>(motorControl);
-    std::cout << "Motor controller object seemingly initialized." << std::endl;
-    // Self testing?
+    std::cout << "Motor controller object initialized." << std::endl;
 
-    // TCP Server Threading
-    MyServer tcpServer;
-    tcpServer.startServer();
-    std::cout << "TCP Server started on port " << tcpServer.serverPort()
-              << std::endl;
+    // Self testing? Periodic testing?
+    //SystemTester& sysTest = SystemTester::buildTester(driverPtr,adc0Ptr,adc1Ptr);
+    //std::unique_ptr<SystemTester> sysTestPtr = std::make_unique<SystemTester>(sysTest);
+    //std::cout << "System test object initialized." << std::endl;
 
-    // Program loop
+    // TCP Server
+    //MyServer tcpServer;
 
 
+    // Program Loop
     bool escFlag = false;
-    std::string cmdStr{};
     while (!escFlag) {
-        if (tcpServer.hasNewData()) {
-            cmdStr = tcpServer.getNextData();
-        }
-        if (tcpServer.hasPendingConnections()) std::cout << "Pending connection" << std::endl;
-        if (!cmdStr.empty()) {
-            // Do something
-            // Send response to UR Cap
-            cmdStr.clear();
-        }
-
-//        motorControlPtr->getForce();
-//        motorControlPtr->getPosition();
-
+        escFlag = true;
     };
 
-    tcpServer.close();
+    //tcpServer.close();
     std::cout << "===== End =====" << std::endl;
     return 0;
 }

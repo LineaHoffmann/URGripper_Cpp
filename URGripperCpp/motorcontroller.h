@@ -6,7 +6,7 @@
 #include "adc0832.h"
 #include "l298.h"
 
-enum MOTOR_CONTROL_ERROR_CODE{
+enum class MOTOR_CONTROL_ERROR_CODE {
     ALL_OK = 0x00,
     OUT_OF_POSITION_RANGE = 0x01,
     FORCE_ABOVE_MAX = 0x02,

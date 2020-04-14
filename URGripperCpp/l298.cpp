@@ -3,9 +3,13 @@
 
 // Output pins on GPIO13 and GPIO19
 GPIO::DigitalOut L298::in1(13), L298::in2(19);
-// PWM output on GPIO26 (soft PWM, 10kHz/20 =~ 500Hz)
+// PWM output on GPIO26 (soft PWM, 10kHz/20 =~ 500Hz, initial value 0)
 GPIO::PWMOut L298::en(26,20,0);
 
+L298& L298::buildL298() {
+    static L298 driver;
+    return driver;
+}
 L298::L298() {}
 void L298::off() {en.set_ratio(0);}
 void L298::setRatio(unsigned int r) {if (r <= 20) en.set_ratio(r);}
