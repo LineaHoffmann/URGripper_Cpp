@@ -208,7 +208,7 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     };
     // Turn off motor, gearing will hold it
-    if (i == 20) driver_->setRatio(0);
+    driver_->setRatio(0);
     // If we made it here, all may have gone well
     return state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }
