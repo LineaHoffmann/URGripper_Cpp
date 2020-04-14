@@ -1,6 +1,7 @@
 #ifndef L298_H
 #define L298_H
-#include <cppgpio.hpp>
+
+#include <cppgpio/output.hpp>
 
 class L298
 {

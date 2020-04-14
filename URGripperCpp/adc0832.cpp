@@ -1,5 +1,4 @@
 #include <stdexcept>
-#include <cppgpio.hpp>
 #include <cmath>
 
 #include "adc0832.h"

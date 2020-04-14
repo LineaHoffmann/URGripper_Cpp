@@ -1,5 +1,4 @@
 #include "l298.h"
-#include <cppgpio.hpp>
 
 // Output pins on GPIO13 and GPIO19
 GPIO::DigitalOut L298::in1(13), L298::in2(19);

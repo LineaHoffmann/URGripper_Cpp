@@ -11,6 +11,7 @@ QMAKE_CXXFLAGS += -std=c++14
 # Raspberry Pi and threading libs
 unix:!macx: LIBS += -lcppgpio
 unix:!macx: LIBS += -lpthread
+unix:!macx: LIBS += -lncurses
 
 # Source files
 SOURCES += \

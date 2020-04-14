@@ -1,7 +1,9 @@
 #ifndef ADC0832_H
 #define ADC0832_H
 
-#include <cppgpio.hpp>
+#include <cppgpio/gpio.hpp>
+#include <cppgpio/buttons.hpp>
+#include <cppgpio/output.hpp>
 
 class ADC0832
 {
