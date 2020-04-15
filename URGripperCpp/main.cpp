@@ -3,6 +3,7 @@
 #include <ncurses.h>    // For console GUI formatting
 #include <vector>
 
+#include <boost/asio.hpp>
 
 #include "adc0832.h"
 #include "l298.h"
@@ -10,30 +11,29 @@
 
 
 /**
- * @brief Circular Buffer class
- * Used for storing Log and State window printouts
+ * @brief Circular string buffer class
+ * Used for storing log and state window printouts
  */
-template <class T>
 class CircularBuffer {
 public:
     CircularBuffer(uint size = 22) {
         size_ = size;
         data_.resize(size_);
     }
-    void addNew (T &newData){
+    void addNew (std::string &newData){
         if (data_.size() >= size_) {
             data_.erase(data_.begin());
         }
         data_.push_back(newData);
     }
-    T get(uint index){
-        if (index < 0 || index > size_) return nullptr;
+    std::string get(uint index){
+        if (index > size_) return nullptr;
         return data_.at(index);
     }
     uint size() {return size_;}
 private:
     uint size_;
-    std::vector<T> data_;
+    std::vector<std::string> data_;
 };
 
 /**
@@ -43,7 +43,7 @@ struct window {
     WINDOW* win = nullptr;
     int height;
     int width;
-    CircularBuffer<std::string> circBuf;
+    CircularBuffer circBuf;
 };
 
 // Creating two subwindows
@@ -128,7 +128,21 @@ void drawState(std::shared_ptr<L298> driver, std::shared_ptr<ADC0832> adc0, std:
     mvwprintw(wState.win,12,2,"Motor Control: ");
     mvwprintw(wState.win,13,2,"TCP Server:    ");
 
-    // Get data from pointers and display in gui
+    // Get data from pointers
+    uint8_t tempADC[4];
+    tempADC[0] = adc0->readADC(0);
+    tempADC[1] = adc0->readADC(1);
+    tempADC[2] = adc1->readADC(0);
+    tempADC[3] = adc1->readADC(1);
+    mvwprintw(wState.win,3,12,"Error Codes");
+    mvwprintw(wState.win,4,12,"Error Codes");
+    mvwprintw(wState.win,5,12,"Error Codes");
+    mvwprintw(wState.win,6,12,"Error Codes");
+
+    MOTOR_CONTROL_ERROR_CODE moCtrlErr = moCtrl->getState();
+    mvwprintw(wState.win,8,2,"Error Codes");
+
+
 
     // Refresh screen with updates
     wrefresh(wState.win);
@@ -146,6 +160,7 @@ int main() {
     // Initialize the console GUI
     startConsole();
     printLog("Console GUI started");
+
 
     // Creating L298 hardware object
     // Driver Enable pin has soft PWM at ~500Hz

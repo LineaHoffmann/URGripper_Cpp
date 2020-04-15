@@ -1,12 +1,12 @@
 # Restructured slightly to support Qt libraries
-CONFIG += c++14 console
+CONFIG += c++17 console
 CONFIG -= app_bundle
 
 # Borrowed from Qt-terminal project default
 #DEFINES += QT_DEPRECATED_WARNINGS
 
 # For std::make_unique
-QMAKE_CXXFLAGS += -std=c++14
+QMAKE_CXXFLAGS += -std=c++17
 
 # Raspberry Pi and threading libs
 unix:!macx: LIBS += -lcppgpio
