@@ -2,8 +2,10 @@
 #include <memory>       // For C++ smart pointers
 #include <ncurses.h>    // For console GUI formatting
 #include <vector>
+#include <sstream>      // For string stream manipulation
+#include <iomanip>      // As above
 
-#include <boost/asio.hpp>
+//#include <boost/asio.hpp>
 
 #include "adc0832.h"
 #include "l298.h"
@@ -109,41 +111,94 @@ static void printLog(std::string s) {
     wrefresh(wLog.win);
 }
 
+
 /**
- * @brief Draw State window
+ * @brief init draw State window
  */
-void drawState(std::shared_ptr<L298> driver, std::shared_ptr<ADC0832> adc0, std::shared_ptr<ADC0832> adc1, std::shared_ptr<MotorController> moCtrl) {
+void initDrawState() {
+    // This only draws the labels
     // Writing ADC labels
-    mvwprintw(wState.win,2,2,"ADC Readings");
-    mvwprintw(wState.win,3,2,"Force:    ");
-    mvwprintw(wState.win,4,2,"Current:  ");
-    mvwprintw(wState.win,5,2,"Position: ");
-    mvwprintw(wState.win,6,2,"3.3V:     ");
+    // Labels to be corrected when final
+    mvwprintw(wState.win,2,2,"ADC READING");
+    mvwprintw(wState.win,2,17,"VALUE");
+    mvwprintw(wState.win,3,2,"ADC 0,0:");
+    mvwprintw(wState.win,4,2,"ADC 0,1:");
+    mvwprintw(wState.win,5,2,"ADC 1,0:");
+    mvwprintw(wState.win,6,2,"ADC 1,1:");
 
     // Writing error code labels
     mvwprintw(wState.win,8,2,"Error Codes");
-    mvwprintw(wState.win,9,2,"Motor Driver:  ");
-    mvwprintw(wState.win,10,2,"ADC 0:         ");
-    mvwprintw(wState.win,11,2,"ADC 1:         ");
-    mvwprintw(wState.win,12,2,"Motor Control: ");
-    mvwprintw(wState.win,13,2,"TCP Server:    ");
+    mvwprintw(wState.win,10,2,"ADC 0:");
+    mvwprintw(wState.win,11,2,"ADC 1:");
+    mvwprintw(wState.win,12,2,"Motor:");
+    mvwprintw(wState.win,13,2,"Server:");
+    mvwprintw(wState.win,14,2,"Power:");
 
-    // Get data from pointers
-    uint8_t tempADC[4];
-    tempADC[0] = adc0->readADC(0);
-    tempADC[1] = adc0->readADC(1);
-    tempADC[2] = adc1->readADC(0);
-    tempADC[3] = adc1->readADC(1);
-    mvwprintw(wState.win,3,12,"Error Codes");
-    mvwprintw(wState.win,4,12,"Error Codes");
-    mvwprintw(wState.win,5,12,"Error Codes");
-    mvwprintw(wState.win,6,12,"Error Codes");
+    // Writing misc. labels
+    mvwprintw(wState.win,wState.height-2,2,"Frame:");
+}
 
+/**
+ *  @brief uint8_t to 3 digit wide zero padded std::string
+ */
+std::string uint8tostr(uint8_t num) {
+    std::ostringstream ss;
+    ss << std::setw(3) << std::setfill('0') << static_cast<int>(num);
+    return ss.str();
+}
+
+/**
+ * @brief Draw State window
+ */
+void drawState(std::shared_ptr<L298> driver,
+               std::shared_ptr<ADC0832> adc0,
+               std::shared_ptr<ADC0832> adc1,
+               std::shared_ptr<MotorController> moCtrl,
+               unsigned long long &fcount) {
+// A few defines for better readability
+// May change in final version
+#define rdForce     adc0->readADC(0);
+#define rdPosition  adc0->readADC(1);
+#define rdCurrent   adc1->readADC(0);
+#define rd3V3       adc1->readADC(1);
+
+    // Get data from ADC pointers
+    std::array<uint8_t, 4> tempADC{0};
+    tempADC[0] = rdForce;
+    tempADC[1] = rdPosition;
+    tempADC[2] = rdCurrent;
+    tempADC[3] = rd3V3;
+
+    // Convert to char* string and write uint8_t style value
+    // Padding with zeroes in front to make 3 digits
+    for (uint i = 0; i < tempADC.size(); ++i) {
+        mvwprintw(wState.win,3+static_cast<int>(i),17,uint8tostr(tempADC[i]).c_str());
+    }
+
+    // Get Motor Controller error code
     MOTOR_CONTROL_ERROR_CODE moCtrlErr = moCtrl->getState();
-    mvwprintw(wState.win,8,2,"Error Codes");
+    // Print accordingly
+    if (moCtrlErr == MOTOR_CONTROL_ERROR_CODE::ALL_OK) {
+        mvwprintw(wState.win,12,17,"OK");
+    } else {
+        mvwprintw(wState.win,12,17,"ERR");
+    }
 
+    // Get TCP Server error code
+    //
+    //
 
+    // Get 3.3V rail, measurement at exact 3.3V is 3.05V = 155-156;
+    // Limit chosen as +-5% [147 - 164]
+    if (tempADC[3] <= 164 && tempADC[3] >= 147) {
+        mvwprintw(wState.win,14,17,"OK");
+    } else {
+        mvwprintw(wState.win,14,17,"ERR");
+    }
 
+    // Increment frame counter
+    fcount++;
+    mvwprintw(wState.win, wState.height - 2, 9, std::to_string(fcount).c_str());
     // Refresh screen with updates
     wrefresh(wState.win);
     return;
@@ -193,6 +248,11 @@ int main() {
     // TCP Server
     //MyServer tcpServer;
 
+    // Frame counter for State view
+    unsigned long long fcount{0};
+    // Initalizing State window labels
+    initDrawState();
+
     // Program loop
     // If user presses x, loop exits
     // Each getch() hangs system for t = timeout
@@ -202,7 +262,7 @@ int main() {
         // This part handles State window drawing
         while (std::chrono::steady_clock::now() > next) {
             next += Framerate{1};
-            drawState(driverPtr,adc0Ptr,adc1Ptr,motorControlPtr);
+            drawState(driverPtr,adc0Ptr,adc1Ptr,motorControlPtr,fcount);
         }
     }
 

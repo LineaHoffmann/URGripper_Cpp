@@ -21,6 +21,8 @@ MotorController::MotorController(std::shared_ptr<L298> driver, std::shared_ptr<A
     positionFactor_ = 0.1;
     positionRange_.first = 20;
     positionRange_.second = 100;
+    // Init complete
+    state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }
 
 /*
