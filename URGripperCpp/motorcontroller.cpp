@@ -24,52 +24,6 @@ MotorController::MotorController(std::shared_ptr<L298> driver, std::shared_ptr<A
 }
 
 /*
-bool MotorController::move(unsigned int toPosition, unsigned int force)
-{
-    if (toPosition > 0 && toPosition <=100) {
-        if (this->calcForce() <= maxForce) {
-            if (this->calcPosition() == 1000) {
-                //std::cout << "error in potmeter" << std::endl;
-                return 1;
-            }
-
-            while (position != toPosition){
-
-                if (position < toPosition) {
-                    if (this->calcForce() > force) {
-                        return 1;
-                    }
-                    //kode til motor her:
-
-
-
-
-
-
-                } else if (position > toPosition) {
-                    if (this->calcForce() > force) {
-                        return 1;
-                    }
-                    //kode til motor her:
-
-
-
-
-                }
-
-            }
-
-        } else {
-            //std::cout << "error in force" << std::endl;
-            return 1;
-}
-    }
-    else {
-       //std::cout << "error in position" << std::endl;
-       return 1;
-    }
-    return 0;
-}
 unsigned int MotorController::calcPosition()
 {
     unsigned int potReading = this->getPotReading(1);
@@ -104,42 +58,6 @@ void MotorController::changePotRange(unsigned int lower, unsigned int upper)
 {
     potRange[0] = lower;
     potRange[1] = upper;
-}
-uint8_t MotorController::getWheatstoneReading(uint8_t)
-unsigned int MotorController::getWheatstoneReading(unsigned int channel)
-    {
-        unsigned int tempReading = adcForce_();
-        if (tempReading <= 256 && tempReading >= 0)
-        {
-            return tempReading;
-        }
-        else
-        {
-            //std::cout << "Wheatstone reading not in accepted rang. " << std::endl;
-            return 0;
-        }
-    }
-double MotorController::getOffset(){
-    return offset;
-}
-double MotorController::getSlope()
-{
-    return slope;
-}
-unsigned int MotorController::calcForce()
-{
-    unsigned int wheatstoneReading = this ->getWheatstoneReading(2);
-    if (wheatstoneReading == 0)
-    {
-        // Error in reading
-        return 0;
-    }
-    else
-    {
-        force = static_cast<unsigned int>((slope*wheatstoneReading) - offset);
-        return force;
-    }
-
 }
 */
 
