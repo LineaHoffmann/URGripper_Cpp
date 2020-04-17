@@ -18,13 +18,15 @@ SOURCES += \
         main.cpp \
     l298.cpp \
     adc0832.cpp \
-    motorcontroller.cpp
+    motorcontroller.cpp \
+    consolegui.cpp
 
 # Header files
 HEADERS += \
     l298.h \
     adc0832.h \
-    motorcontroller.h
+    motorcontroller.h \
+    consolegui.h
 
 # Borrowed from Qt-terminal project default
 # Default rules for deployment.
