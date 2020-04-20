@@ -1,15 +1,25 @@
 #include "consolegui.h"
+#include <algorithm> // For some search and destroy in std::string
 
+/**
+ * @brief Static function for building static reference object
+ */
 ConsoleGUI& ConsoleGUI::Build(std::ostream& os) {
     static ConsoleGUI gui(os);
     return gui;
 }
+/**
+ * @brief GUI Destructor
+ */
 ConsoleGUI::~ConsoleGUI() {
     // The destructor needs to clean up after ncurses
     delwin(state_window_.win);
     delwin(log_window_.win);
     endwin();
 }
+/**
+ * @brief GUI Constructor
+ */
 ConsoleGUI::ConsoleGUI(std::ostream& os) : m_log_(os.rdbuf()) {
     // My default xterm window size
     state_window_.height = 24;
@@ -20,6 +30,7 @@ ConsoleGUI::ConsoleGUI(std::ostream& os) : m_log_(os.rdbuf()) {
     initscr();
     noecho();
     curs_set(0);
+
     timeout(0);
     refresh();
 
@@ -55,14 +66,23 @@ ConsoleGUI::ConsoleGUI(std::ostream& os) : m_log_(os.rdbuf()) {
     mvwprintw(state_window_.win,state_window_.height-2,2,"Frame:");
 
 }
+/**
+ * @brief Adding MotorController shared pointer
+ */
 void ConsoleGUI::AddComponent(std::shared_ptr<MotorController> ptr) {
-    if (motor_controller_ptr_ == nullptr) {motor_controller_ptr_ = ptr;}
+    if (motor_controller_ptr_ == nullptr) motor_controller_ptr_ = ptr;
     return;
 }
+/**
+ * @brief Adding ADC0832 shared pointer
+ */
 void ConsoleGUI::AddComponent(std::shared_ptr<ADC0832> ptr) {
     if (adc_0_ptr_ == nullptr) {adc_0_ptr_ = ptr; return;}
     if (adc_1_ptr_ == nullptr) {adc_1_ptr_ = ptr;} return;
 }
+/**
+ * @brief Redraws the data in the state window
+ */
 void ConsoleGUI::DrawState(unsigned long long frame) {
     // A few defines for better readability
     // May change in final version
@@ -118,21 +138,31 @@ std::string ConsoleGUI::Uint8ToStr(const uint8_t num) {
     ss << std::setw(3) << std::setfill('0') << static_cast<int>(num);
     return ss.str();
 }
+/**
+ * @brief Helper function for writing strings to the log window
+*/
 void ConsoleGUI::LogHelper(std::string str) {
+    // todo: newline or return chars break the logger
+    // For now we just remove them.
+    str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
+    str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
+    int width = ConsoleGUI::log_window_.width-2;
     // If string is too long, cut beginning and push to buffer
-    while (static_cast<int>(str.size()) > log_window_.width-2) {
-        std::string tstr = str.substr(0,static_cast<uint>(ConsoleGUI::log_window_.width)-2);
-        str.erase(0,static_cast<uint>(ConsoleGUI::log_window_.width)-2);
-        ConsoleGUI::log_window_.buf.addNew(tstr);
+    if (str.size() > static_cast<uint>(width)) {
+        while (static_cast<int>(str.size()) > width) {
+            std::string tstr = str.substr(0,static_cast<uint>(width));
+            str.erase(0,static_cast<uint>(width));
+            ConsoleGUI::log_window_.buf.addNew(tstr);
+        }
     }
     // Push new (or end of long) log string to buffer
     ConsoleGUI::log_window_.buf.addNew(str);
     // Print for entire window size / buffer
     // Create and write line of enough spaces to erase previously displayed line
     // Empty line made here because all lines are equal width
-    std::string ts;
-    for (int j = 0; j < ConsoleGUI::log_window_.width-2; ++j) {
-        ts.append(" ");
+    std::string ts{};
+    for (int j = 0; j < width; ++j) {
+        ts += " ";
     }
     for (uint i = 0; i < ConsoleGUI::log_window_.buf.size(); ++i) {
         mvwprintw(ConsoleGUI::log_window_.win,static_cast<int>(i+1),1,ts.c_str());

@@ -60,9 +60,9 @@ public:
     void DrawState(unsigned long long);
     // For streaming to the log window
     template <typename T> friend ConsoleGUI& operator<<(ConsoleGUI& os, const T& t)
-    { os.m_log_ << t; os.LogHelper(t); return os; }
-    friend ConsoleGUI& operator<<(ConsoleGUI& os, std::ostream& ( *pf )(std::ostream&))
-    { os.m_log_ << pf; return os; }
+    {os.LogHelper(t); return os;}
+//    friend ConsoleGUI& operator<<(ConsoleGUI& os, std::ostream& ( *pf )(std::ostream&))
+//    { os.m_log_ << pf; return os; }
 
 private:
     // Private constructor

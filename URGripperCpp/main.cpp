@@ -2,6 +2,7 @@
 #include "l298.h"
 #include "motorcontroller.h"
 #include "consolegui.h"
+#include "tcpserver.h"
 
 int main() {
     //GPIO::GPIOBase::simulation(true);
@@ -54,12 +55,18 @@ int main() {
     //std::cout << "System test object initialized." << std::endl;
 
     // TCP Server
-    //MyServer tcpServer;
+    TcpServer& server = TcpServer::Build();
+    server.Start();
+    gui << "TCP Server starting on port 12321";
 
     // Program loop
     // If user presses x, loop exits
     while (getch() != 'x') {
         // This is the freerunning part of the loop
+        std::string msg = server.GetData();
+        if (msg != "") {
+            gui << msg;
+        }
 
         // This part handles State window drawing
         while (std::chrono::steady_clock::now() > next) {
@@ -67,9 +74,9 @@ int main() {
             gui.DrawState(fcount++);
         }
     }
-
     gui << "End reached";
     gui << "Press any button to stop";
+    gui << "Sadly this will also crash this";
     // Loop locks until keypress, to help see window before ending
     while(1) {
         if (getch() != -1) break;
