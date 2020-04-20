@@ -50,7 +50,7 @@ class ConsoleGUI
 {
 public:
     // For building the console object
-    static ConsoleGUI& Build(std::ostream& os);
+    static ConsoleGUI& Build();
     // Destructor for cleaning after ncurses
     virtual ~ConsoleGUI();
     // Adders for functionality blocks
@@ -59,14 +59,12 @@ public:
     // State window updater function
     void DrawState(unsigned long long);
     // For streaming to the log window
-    template <typename T> friend ConsoleGUI& operator<<(ConsoleGUI& os, const T& t)
-    {os.LogHelper(t); return os;}
-//    friend ConsoleGUI& operator<<(ConsoleGUI& os, std::ostream& ( *pf )(std::ostream&))
-//    { os.m_log_ << pf; return os; }
+    template <typename T> friend ConsoleGUI& operator<<(ConsoleGUI& gui, const T& t)
+    {gui.LogHelper(t); return gui;}
 
 private:
     // Private constructor
-    ConsoleGUI(std::ostream& os);
+    ConsoleGUI();
     // Helper funtion for writing to log window
     void LogHelper(std::string);
     // uint8_t to string conversion
@@ -78,7 +76,5 @@ private:
     std::shared_ptr<MotorController> motor_controller_ptr_;
     std::shared_ptr<ADC0832> adc_0_ptr_;
     std::shared_ptr<ADC0832> adc_1_ptr_;
-    // Ostream member variable
-    std::ostream m_log_;
 };
 #endif // CONSOLEGUI_H

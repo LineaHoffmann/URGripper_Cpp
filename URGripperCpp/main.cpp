@@ -13,7 +13,7 @@ int main() {
     // Frame counter for State view
     unsigned long long fcount{0};
     // Console GUI start
-    ConsoleGUI& gui = ConsoleGUI::Build(std::cout);
+    ConsoleGUI& gui = ConsoleGUI::Build();
 
     // This stream isn't perfect
     // gui << "" << ""; will make separate lines (for now?)

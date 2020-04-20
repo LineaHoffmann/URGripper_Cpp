@@ -4,8 +4,8 @@
 /**
  * @brief Static function for building static reference object
  */
-ConsoleGUI& ConsoleGUI::Build(std::ostream& os) {
-    static ConsoleGUI gui(os);
+ConsoleGUI& ConsoleGUI::Build() {
+    static ConsoleGUI gui;
     return gui;
 }
 /**
@@ -20,7 +20,7 @@ ConsoleGUI::~ConsoleGUI() {
 /**
  * @brief GUI Constructor
  */
-ConsoleGUI::ConsoleGUI(std::ostream& os) : m_log_(os.rdbuf()) {
+ConsoleGUI::ConsoleGUI() {
     // My default xterm window size
     state_window_.height = 24;
     state_window_.width = 40;
