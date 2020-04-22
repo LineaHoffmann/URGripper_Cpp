@@ -13,41 +13,42 @@
 #include <motorcontroller.h>
 #include <adc0832.h>
 
-/**
- * @brief Circular string buffer class
- * Used for storing log and state window printouts
- */
-class CircularBuffer {
-public:
-    CircularBuffer(uint size = 22) {
-        size_ = size;
-        data_.resize(size_);
-    }
-    void addNew(const std::string &newData){
-        data_.erase(data_.begin());
-        data_.push_back(newData);
-    }
-    std::string get(uint index){
-        if (index > size_) return nullptr;
-        return data_.at(index);
-    }
-    uint size() {return size_;}
-private:
-    uint size_;
-    std::vector<std::string> data_;
-};
-/**
- * @brief Struct for window
- */
-struct Window {
-    WINDOW* win = nullptr;
-    int height;
-    int width;
-    CircularBuffer buf;
-};
-
 class ConsoleGUI
 {
+    /**
+     * @brief Circular string buffer class
+     * Used for storing log and state window printouts
+     */
+    struct CircularBuffer {
+    public:
+        CircularBuffer(uint size = 22) {
+            size_ = size;
+            data_.resize(size_);
+        }
+        void addNew(const std::string &newData){
+            data_.erase(data_.begin());
+            data_.push_back(newData);
+        }
+        std::string get(uint index){
+            if (index > size_) return nullptr;
+            return data_.at(index);
+        }
+        uint size() {return size_;}
+    private:
+        uint size_;
+        std::vector<std::string> data_;
+    };
+
+    /**
+     * @brief Struct for window
+     */
+    struct Window {
+        WINDOW* win = nullptr;
+        int height;
+        int width;
+        ConsoleGUI::CircularBuffer buf;
+    };
+
 public:
     // For building the console object
     static ConsoleGUI& Build();

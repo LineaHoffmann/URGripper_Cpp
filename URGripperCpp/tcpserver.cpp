@@ -25,8 +25,7 @@ TcpServer::~TcpServer() {
     // Naive attempt to rejoin detached thread
     // todo: fix this
     listener_stop_ = true;
-    listener_thread_.join();
-    listener_thread_.~thread();
+    gui_stop_ = true;
 }
 /**
  * @brief Constructor (does nothing)

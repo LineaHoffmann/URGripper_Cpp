@@ -49,15 +49,15 @@ int main() {
     gui.AddComponent(motorControlPtr);
     gui << "Motor Controller initialized";
 
-    // Self testing? Periodic testing?
-    //SystemTester& sysTest = SystemTester::buildTester(driverPtr,adc0Ptr,adc1Ptr);
-    //std::unique_ptr<SystemTester> sysTestPtr = std::make_unique<SystemTester>(sysTest);
-    //std::cout << "System test object initialized." << std::endl;
-
     // TCP Server
     TcpServer& server = TcpServer::Build();
     server.Start();
     gui << "TCP Server starting on port 12321";
+
+    // Self testing? Periodic testing?
+    //SystemTester& sysTest = SystemTester::buildTester(driverPtr,adc0Ptr,adc1Ptr);
+    //std::unique_ptr<SystemTester> sysTestPtr = std::make_unique<SystemTester>(sysTest);
+    //std::cout << "System test object initialized." << std::endl;
 
     // Program loop
     // If user presses x, loop exits
@@ -65,6 +65,7 @@ int main() {
         // This is the freerunning part of the loop
         std::string msg = server.GetData();
         if (msg != "") {
+            msg.insert(0,"Client: ");
             gui << msg;
         }
 

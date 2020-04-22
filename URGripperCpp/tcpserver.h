@@ -29,6 +29,8 @@ private:
     std::string outgoing_data_{};
     std::thread listener_thread_;
     bool listener_stop_{false};
+    std::thread gui_thread_;
+    bool gui_stop_{false};
 };
 
 #endif // TCPSERVER_H
