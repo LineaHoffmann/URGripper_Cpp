@@ -2,6 +2,7 @@
 #include "l298.h"
 #include "motorcontroller.h"
 #include "consolegui.h"
+#include "tcpserver.h"
 
 int main() {
     //GPIO::GPIOBase::simulation(true);
@@ -12,7 +13,7 @@ int main() {
     // Frame counter for State view
     unsigned long long fcount{0};
     // Console GUI start
-    ConsoleGUI& gui = ConsoleGUI::Build(std::cout);
+    ConsoleGUI& gui = ConsoleGUI::Build();
 
     // This stream isn't perfect
     // gui << "" << ""; will make separate lines (for now?)
@@ -48,18 +49,25 @@ int main() {
     gui.AddComponent(motorControlPtr);
     gui << "Motor Controller initialized";
 
+    // TCP Server
+    TcpServer& server = TcpServer::Build();
+    server.Start();
+    gui << "TCP Server starting on port 12321";
+
     // Self testing? Periodic testing?
     //SystemTester& sysTest = SystemTester::buildTester(driverPtr,adc0Ptr,adc1Ptr);
     //std::unique_ptr<SystemTester> sysTestPtr = std::make_unique<SystemTester>(sysTest);
     //std::cout << "System test object initialized." << std::endl;
 
-    // TCP Server
-    //MyServer tcpServer;
-
     // Program loop
     // If user presses x, loop exits
     while (getch() != 'x') {
         // This is the freerunning part of the loop
+        std::string msg = server.GetData();
+        if (msg != "") {
+            msg.insert(0,"Client: ");
+            gui << msg;
+        }
 
         // This part handles State window drawing
         while (std::chrono::steady_clock::now() > next) {
@@ -67,9 +75,9 @@ int main() {
             gui.DrawState(fcount++);
         }
     }
-
     gui << "End reached";
     gui << "Press any button to stop";
+    gui << "Sadly this will also crash this";
     // Loop locks until keypress, to help see window before ending
     while(1) {
         if (getch() != -1) break;
