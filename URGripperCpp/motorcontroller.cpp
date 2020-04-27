@@ -17,6 +17,7 @@ MotorController::MotorController(std::shared_ptr<L298> driver, std::shared_ptr<A
     // Setting different settings
     forceOffset_ = 5;
     forceFactor_ = 0.1;
+    maxForce_ = 10; // skal ændres
     positionOffset_ = 5;
     positionFactor_ = 0.1;
     positionRange_.first = 20;
@@ -80,7 +81,7 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
         return state_ = MOTOR_CONTROL_ERROR_CODE::FORCE_ABOVE_MAX;
 
     uint8_t targetPosition = static_cast<uint8_t>(std::round(newPos * positionFactor + positionOffset_));
-    uint8_t maxForce = static_cast<uint8_t>(std::round(force * forceFactor) + forceOffset_);
+    //uint8_t maxForce = static_cast<uint8_t>(std::round(force * forceFactor) + forceOffset_);
     // Direction -- true = in | false = out
     bool direction = (targetPosition < adcPosition_()) ? true : false;
     driver_->setDirection(direction);
@@ -114,7 +115,7 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
     // Loop until force is correct, if not at or past position or until actual max output
     // If previous loop broke because of position, this should fall through
     // If not, we should be touching an object measureably
-    while (!(i == 20) && rdForce < maxForce ) {
+    while (!(i == 20) && rdForce < maxForce_ ) {
         // Read force and position once per loop
         rdForce = adcForce_();
         rdPos = adcPosition_();
@@ -123,7 +124,7 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
         if (direction) {if (targetPosition >= rdPos) {driver_->setRatio(0); break;}}
         else {if (targetPosition <= rdPos) {driver_->setRatio(0); break;}}
         // If read force is less than max, step up
-        if (rdForce < maxForce) driver_->setRatio(++i);
+        if (rdForce < maxForce_) driver_->setRatio(++i);
         // Small delay
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     };

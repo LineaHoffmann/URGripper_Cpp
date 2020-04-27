@@ -3,6 +3,7 @@
 #include "motorcontroller.h"
 #include "consolegui.h"
 #include "tcpserver.h"
+#include "statecontroller.h"
 
 int main() {
     //GPIO::GPIOBase::simulation(true);
@@ -54,19 +55,34 @@ int main() {
     server.Start();
     gui << "TCP Server starting on port 12321";
 
+    //Statecontroller
+    statecontroller stateControl;
+
     // Self testing? Periodic testing?
     //SystemTester& sysTest = SystemTester::buildTester(driverPtr,adc0Ptr,adc1Ptr);
     //std::unique_ptr<SystemTester> sysTestPtr = std::make_unique<SystemTester>(sysTest);
     //std::cout << "System test object initialized." << std::endl;
 
+    std::string msg = "OP;0;1;0;30;";
     // Program loop
     // If user presses x, loop exits
     while (getch() != 'x') {
         // This is the freerunning part of the loop
-        std::string msg = server.GetData();
+//        std::string msg = server.GetData();
         if (msg != "") {
-            msg.insert(0,"Client: ");
+            //Statecontroller
+            stateControl.readCommand(msg);
+            //test purpose of readCommand()
+//            std::array<std::string,5> recieveArray = stateControl.readCommand(msg);
+//            for(std::string elem : recieveArray)
+//            {
+//                gui << elem;
+//            }
+            msg.insert(0,"Client: "); //Obs på at det ikke skal med i statecontroller
             gui << msg;
+            msg.erase();
+            stateControl.executeCommand();
+
         }
 
         // This part handles State window drawing
