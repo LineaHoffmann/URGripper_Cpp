@@ -17,7 +17,7 @@ MotorController::MotorController(std::shared_ptr<L298> driver, std::shared_ptr<A
     // Setting different settings
     forceOffset_ = 5;
     forceFactor_ = 0.1;
-    maxForce_ = 10; // skal ændres
+    maxForce_ = 10; // skal ændres, to do nul tjek i move?
     positionOffset_ = 5;
     positionFactor_ = 0.1;
     positionRange_.first = 20;

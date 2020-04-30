@@ -57,18 +57,19 @@ int main() {
 
     //Statecontroller
     statecontroller stateControl;
+    stateControl.AddMotorcontroller(motorControlPtr);
 
     // Self testing? Periodic testing?
     //SystemTester& sysTest = SystemTester::buildTester(driverPtr,adc0Ptr,adc1Ptr);
     //std::unique_ptr<SystemTester> sysTestPtr = std::make_unique<SystemTester>(sysTest);
     //std::cout << "System test object initialized." << std::endl;
 
-    std::string msg = "OP;0;1;0;30;";
+
     // Program loop
     // If user presses x, loop exits
     while (getch() != 'x') {
         // This is the freerunning part of the loop
-//        std::string msg = server.GetData();
+        std::string msg = server.GetData();
         if (msg != "") {
             //Statecontroller
             stateControl.readCommand(msg);
@@ -81,7 +82,7 @@ int main() {
             msg.insert(0,"Client: "); //Obs på at det ikke skal med i statecontroller
             gui << msg;
             msg.erase();
-            stateControl.executeCommand();
+            server.SetReply(stateControl.executeCommand());
 
         }
 

@@ -28,8 +28,8 @@ public:
 
     //return 1 succes, 0 fail
     void readCommand(const std::string& command);
-    bool executeCommand();
-    void reply();
+    std::string executeCommand();
+
 
     //shared pointer
 //    void AddMsg(std::shared_ptr<TcpServer> ptr);
@@ -42,7 +42,7 @@ private:
      std::shared_ptr<MotorController> motorController_ptr_;
 
 
-    //shared pointer
+    //shared pointer TODO Få den til at virke.
    // std::shared_ptr<TcpServer> tcp_server_ptr_;
 
 

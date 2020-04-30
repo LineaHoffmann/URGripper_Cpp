@@ -66,7 +66,7 @@ void TcpServer::SpawnListener_() {
         std::lock_guard<std::mutex> lock(lock_);
         incoming_data_.push(Read_(socket));
         Write_(socket, outgoing_data_);
-        outgoing_data_.erase();
+        outgoing_data_ = "WAIT";
         lock.~lock_guard();
         socket.close();
     }

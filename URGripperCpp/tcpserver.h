@@ -26,7 +26,7 @@ private:
 
     std::mutex lock_;
     std::queue<std::string> incoming_data_;
-    std::string outgoing_data_{};
+    std::string outgoing_data_{"WAIT"};
     std::thread listener_thread_;
     bool listener_stop_{false};
     std::thread gui_thread_;
