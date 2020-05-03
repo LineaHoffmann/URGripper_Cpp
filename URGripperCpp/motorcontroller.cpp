@@ -17,10 +17,10 @@ MotorController::MotorController(std::shared_ptr<L298> driver, std::shared_ptr<A
     // Setting different settings
     forceOffset_ = 5;
     forceFactor_ = 0.1;
-    positionOffset_ = 5;
-    positionFactor_ = 0.1;
-    positionRange_.first = 20;
-    positionRange_.second = 100;
+    positionOffset_ = 584 / 45;
+    positionFactor_ = 65 / 153;
+    positionRange_.first = 101;
+    positionRange_.second = 253;
     // Init complete
     state_ = MOTOR_CONTROL_ERROR_CODE::ALL_OK;
 }
@@ -65,22 +65,18 @@ void MotorController::changePotRange(unsigned int lower, unsigned int upper)
 
 // Move command
 enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force) {
-    // Calculated conversion factors from [mm] to [0-255] ADC reading
-    double positionFactor{100};
-    double forceFactor{100};
-
     // If inputs are negative, return error
     if (newPos < 0 || force < 0)
         return state_ = MOTOR_CONTROL_ERROR_CODE::NEGATIVE_VALUE;
     // If new position is out off range, return error
-    if (static_cast<uint32_t>(std::round(newPos * positionFactor)) < positionRange_.first || static_cast<uint32_t>(std::round(newPos * positionFactor)) > positionRange_.second)
+    if (static_cast<uint32_t>(std::round(newPos * positionFactor_)) < positionRange_.first || static_cast<uint32_t>(std::round(newPos * positionFactor_)) > positionRange_.second)
         return state_ = MOTOR_CONTROL_ERROR_CODE::OUT_OF_POSITION_RANGE;
     // If new max force is above set limit, return error
-    if (static_cast<uint32_t>(std::round(force * forceFactor)) > maxForce_)
+    if (static_cast<uint32_t>(std::round(force * forceFactor_)) > maxForce_)
         return state_ = MOTOR_CONTROL_ERROR_CODE::FORCE_ABOVE_MAX;
 
-    uint8_t targetPosition = static_cast<uint8_t>(std::round(newPos * positionFactor + positionOffset_));
-    uint8_t maxForce = static_cast<uint8_t>(std::round(force * forceFactor) + forceOffset_);
+    uint8_t targetPosition = static_cast<uint8_t>(std::round(newPos * positionFactor_ + positionOffset_));
+    uint8_t maxForce = static_cast<uint8_t>(std::round(force * forceFactor_) + forceOffset_);
     // Direction -- true = in | false = out
     bool direction = (targetPosition < adcPosition_()) ? true : false;
     driver_->setDirection(direction);
@@ -103,7 +99,7 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
         // If force is more than measurable threshold, break
         if (rdForce > forceOffset_) break;
         // Move slowly, no force required
-        driver_->setRatio(1); // 5% power
+        driver_->setRatio(move_ratio_); // 5% power
     };
 
     // Check if moved far enough
@@ -125,7 +121,7 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
         // If read force is less than max, step up
         if (rdForce < maxForce) driver_->setRatio(++i);
         // Small delay
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     };
     // Turn off motor, gearing will hold it
     driver_->setRatio(0);

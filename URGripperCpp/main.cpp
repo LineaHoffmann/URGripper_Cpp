@@ -50,7 +50,7 @@ int main() {
     gui << "Motor Controller initialized";
 
     // TCP Server
-    TcpServer& server = TcpServer::Build();
+    TcpServer& server = TcpServer::Build(12321,12322);
     server.Start();
     gui << "TCP Server starting on port 12321";
 
@@ -69,18 +69,17 @@ int main() {
             gui << msg;
         }
 
+
+
         // This part handles State window drawing
         while (std::chrono::steady_clock::now() > next) {
             next += Framerate{1};
             gui.DrawState(fcount++);
         }
     }
+    gui << "Attempting to close TCP servers...";
+    server.Stop();
+    gui << "Server closed";
     gui << "End reached";
-    gui << "Press any button to stop";
-    gui << "Sadly this will also crash this";
-    // Loop locks until keypress, to help see window before ending
-    while(1) {
-        if (getch() != -1) break;
-    }
     return 0;
 }

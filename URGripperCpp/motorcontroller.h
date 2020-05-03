@@ -44,7 +44,7 @@ private:
     // Initializer with shared pointer objects from main controller
     // Hide constructor, copy-, and assignment operators in private
     MotorController(std::shared_ptr<L298>,std::shared_ptr<ADC0832>,std::shared_ptr<ADC0832>);
-    //MotorController(const MotorController&); // Cannot be made unique pointer if copy restricted??
+    //MotorController(const MotorController&);
     MotorController& operator=(const MotorController&);
 
     // Controller state
@@ -59,6 +59,9 @@ private:
     uint8_t maxForce_;
     double forceFactor_;
     uint8_t forceOffset_{5};
+
+    // Move PWM ratio (of 20)
+    uint8_t move_ratio_{5};
 
     // Wheatstone
     unsigned int gain{1000}; //gain fra 1. stage

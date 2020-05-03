@@ -3,6 +3,7 @@
 
 #include <cppgpio/output.hpp>
 
+
 class L298
 {
 public:

@@ -59,9 +59,9 @@ public:
     void AddComponent(std::shared_ptr<ADC0832>);
     // State window updater function
     void DrawState(unsigned long long);
-    // For streaming to the log window
-    template <typename T> friend ConsoleGUI& operator<<(ConsoleGUI& gui, const T& t)
-    {gui.LogHelper(t); return gui;}
+    // For streaming strings to the log window
+    friend ConsoleGUI& operator<<(ConsoleGUI& gui, const std::string str)
+    {gui.LogHelper(str); return gui;}
 
 private:
     // Private constructor

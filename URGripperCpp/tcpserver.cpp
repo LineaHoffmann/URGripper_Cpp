@@ -14,35 +14,48 @@
 /**
  * @brief For building static reference object
 */
-TcpServer& TcpServer::Build() {
-    static TcpServer server;
+TcpServer& TcpServer::Build(uint16_t port_robot, uint16_t port_gui) {
+    static TcpServer server(port_robot, port_gui);
     return server;
 }
 /**
- * @brief Destructor
+ * @brief Destructor?
 */
-TcpServer::~TcpServer() {
-    // Naive attempt to rejoin detached thread
-    // todo: fix this
-    listener_stop_ = true;
-    gui_stop_ = true;
-}
+TcpServer::~TcpServer() {}
 /**
- * @brief Constructor (does nothing)
+ * @brief Constructor
 */
-TcpServer::TcpServer() {}
+TcpServer::TcpServer(uint16_t port_robot,uint16_t port_gui) :
+    port_robot_{port_robot},
+    port_gui_{port_gui} {}
 /**
- * @brief Start detached listener thread
+ * @brief Start listener and gui TCP threads
 */
 void TcpServer::Start() {
-    std::thread listener_thread_(&TcpServer::SpawnListener_,this);
-    listener_thread_.detach();
+    robot_thread_ = std::thread(&TcpServer::SpawnRobotListener_,this);
+    gui_thread_ = std::thread(&TcpServer::SpawnGuiListener_,this);
+    return;
+}
+/**
+ * @brief Stop listener and gui TCP threads
+*/
+void TcpServer::Stop() {
+    // Join the two extra threads
+    std::unique_lock<std::mutex> lock(lock_, std::try_to_lock);
+    while(!lock.owns_lock()) lock.try_lock();
+    gui_stop_ = true;
+    robot_stop_ = true;
+    lock.unlock();
+    gui_thread_.join();
+    robot_thread_.join();
     return;
 }
 /**
  * @brief Poll the data queue
 */
 std::string TcpServer::GetData() {
+    std::unique_lock<std::mutex> lock(lock_);
+    while(!lock.owns_lock()) lock.try_lock();
     if (incoming_data_.empty()) return {};
     std::string str = incoming_data_.front();
     incoming_data_.pop();
@@ -51,26 +64,68 @@ std::string TcpServer::GetData() {
 /**
  * @brief Set reply for next incoming connection
 */
-void TcpServer::SetReply(const std::string &s) {outgoing_data_ = s;}
+void TcpServer::SetReply(const std::string &s) {
+    std::unique_lock<std::mutex> lock(lock_);
+    while(!lock.owns_lock()) lock.try_lock();
+    outgoing_data_ = s;
+}
 /**
  * @brief Listener function for Start()
+ *
+ * If client disconnects unexpectedly after accept, it crashes
+ * todo: maybe catch this
 */
-void TcpServer::SpawnListener_() {
+void TcpServer::SpawnRobotListener_() {
+    // Starting required IO services
     boost::asio::io_service io;
-    boost::asio::ip::tcp::acceptor acceptor(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 12321));
+    boost::asio::ip::tcp::acceptor acceptor(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port_robot_));
     boost::asio::ip::tcp::socket socket(io);
-    // todo: this should not be infinite, see thread detaching
-    // Ultimately causes an exception when debug ends
-    while (1) {
-        acceptor.accept(socket);
-        std::lock_guard<std::mutex> lock(lock_);
+    // Setup
+    acceptor.non_blocking(true);
+    boost::system::error_code ec;
+    acceptor.listen();
+    // Check robot_stop_
+    std::unique_lock<std::mutex> lock(lock_, std::try_to_lock);
+    bool stopFlag = robot_stop_;
+    lock.unlock();
+    while (!stopFlag) {
+        // Accept incomming request
+        acceptor.accept(socket,ec);
+        if (ec.value() == 11) {
+            // Request failed bacause of no peer
+            // This happens because accept is non-blocking
+            // which we need to shut the thread when we want
+            while (!lock.owns_lock()) lock.try_lock();
+            stopFlag = robot_stop_;
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            continue;
+        }
+        if (ec) {
+            // Error has happened during accept, logging as incoming data
+            while (!lock.owns_lock()) lock.try_lock();
+            incoming_data_.push("TCP Error: " + ec.message());
+            stopFlag = robot_stop_;
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            continue;
+        }
+        // Read and write data
+        while (!lock.owns_lock()) lock.try_lock();
         incoming_data_.push(Read_(socket));
         Write_(socket, outgoing_data_);
         outgoing_data_.erase();
-        lock.~lock_guard();
+        stopFlag = robot_stop_;
+        lock.unlock();
         socket.close();
     }
-    //return;
+    return;
+}
+/**
+ * @brief todo: make this
+ */
+void TcpServer::SpawnGuiListener_() {
+    return;
 }
 /**
  * @brief boost::asio type read from socket

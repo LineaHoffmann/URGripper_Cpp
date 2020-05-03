@@ -9,20 +9,29 @@ L298& L298::buildL298() {
     static L298 driver;
     return driver;
 }
-L298::L298() {}
-void L298::off() {en.set_ratio(0);}
-void L298::setRatio(unsigned int r) {if (r <= 20) en.set_ratio(r);}
+L298::L298() {
+    GPIO::GPIOBase::force_full_mapping();
+}
+void L298::setRatio(unsigned int r) {
+    if (r == 0) {
+        en.set_ratio(0);
+        in1.off();
+        in2.off();
+        return;
+    }
+    if (r <= 20) en.set_ratio(r);
+}
 void L298::setDirection(unsigned int d) {
     if (d) {
         // Waits for securely eliminating shoot through
         in2.off();
-        std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
         in1.on();
-        std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
     } else {
         in1.off();
-        std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
         in2.on();
-        std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 }
