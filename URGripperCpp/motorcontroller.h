@@ -58,7 +58,7 @@ private:
     // Force variables
     uint8_t maxForce_;
     double forceFactor_;
-    uint8_t forceOffset_{5};
+    uint8_t forceOffset_;
 
     // Move PWM ratio (of 20)
     uint8_t move_ratio_{5};

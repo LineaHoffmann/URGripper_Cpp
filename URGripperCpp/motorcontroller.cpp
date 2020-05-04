@@ -15,8 +15,10 @@ MotorController::MotorController(std::shared_ptr<L298> driver, std::shared_ptr<A
     // Binding pointers to member variables
     driver_ = driver ; adc0_ = adc0; adc1_ = adc1;
     // Setting different settings
-    positionOffset_ = 584 / 45;
-    positionFactor_ = 65 / 153;
+    forceOffset_ = 10;
+    forceFactor_ = 0.1;
+    positionOffset_ = 13;
+    positionFactor_ = 0.42484;
     positionRange_.first = 101;
     positionRange_.second = 253;
     // Init complete
@@ -98,7 +100,7 @@ enum MOTOR_CONTROL_ERROR_CODE MotorController::move(double newPos, double force)
         // If force is more than measurable threshold, break
         if (rdForce > forceOffset_) break;
         // Move slowly, no force required
-        driver_->setRatio(move_ratio_); // 5% power
+        driver_->setRatio(move_ratio_); // Jogging ratio set in header file
     };
 
     // Check if moved far enough
