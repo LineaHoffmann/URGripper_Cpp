@@ -32,7 +32,7 @@ private:
 
     std::mutex lock_;
     std::queue<std::string> incoming_data_;
-    std::string outgoing_data_{};
+    std::string outgoing_data_{"WAIT"};
 
     uint16_t port_robot_;
     uint16_t port_gui_;

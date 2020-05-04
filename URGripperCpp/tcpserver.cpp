@@ -82,7 +82,7 @@ void TcpServer::SpawnRobotListener_() {
     boost::asio::ip::tcp::socket socket(io);
     // Setup
     acceptor.non_blocking(true);
-    boost::system::error_code ec;
+    boost::system::error_code err_code;
     acceptor.listen();
     // Check robot_stop_
     std::unique_lock<std::mutex> lock(lock_, std::try_to_lock);
@@ -90,8 +90,8 @@ void TcpServer::SpawnRobotListener_() {
     lock.unlock();
     while (!stopFlag) {
         // Accept incomming request
-        acceptor.accept(socket,ec);
-        if (ec.value() == 11) {
+        acceptor.accept(socket,err_code);
+        if (err_code.value() == 11) {
             // Request failed bacause of no peer
             // This happens because accept is non-blocking
             // which we need to shut the thread when we want
@@ -101,10 +101,10 @@ void TcpServer::SpawnRobotListener_() {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             continue;
         }
-        if (ec) {
+        if (err_code) {
             // Error has happened during accept, logging as incoming data
             while (!lock.owns_lock()) lock.try_lock();
-            incoming_data_.push("TCP Error: " + ec.message());
+            incoming_data_.push("TCP Error: " + err_code.message());
             stopFlag = robot_stop_;
             lock.unlock();
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -114,7 +114,7 @@ void TcpServer::SpawnRobotListener_() {
         while (!lock.owns_lock()) lock.try_lock();
         incoming_data_.push(Read_(socket));
         Write_(socket, outgoing_data_);
-        outgoing_data_.erase();
+        outgoing_data_ = "WAIT";
         stopFlag = robot_stop_;
         lock.unlock();
         socket.close();

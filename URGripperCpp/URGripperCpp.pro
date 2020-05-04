@@ -24,7 +24,8 @@ SOURCES += \
     adc0832.cpp \
     motorcontroller.cpp \
     consolegui.cpp \
-    tcpserver.cpp
+    tcpserver.cpp \
+    statecontroller.cpp
 
 # Header files
 HEADERS += \
@@ -32,7 +33,8 @@ HEADERS += \
     adc0832.h \
     motorcontroller.h \
     consolegui.h \
-    tcpserver.h
+    tcpserver.h \
+    statecontroller.h
 
 # Borrowed from Qt-terminal project default
 # Default rules for deployment.
