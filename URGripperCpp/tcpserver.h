@@ -12,7 +12,7 @@
 class TcpServer
 {
 public:
-    static TcpServer& Build(uint16_t port_robot, uint16_t port_gui);
+    static TcpServer& Build(uint16_t port);
     //TcpServer();
     ~TcpServer();
     void Start();
@@ -21,26 +21,20 @@ public:
     void SetReply(const std::string& msg);
 
 private:
-    TcpServer(uint16_t port_robot, uint16_t port_gui);
-    void SpawnRobotListener_();
-    void RobotAcceptHandler_(const boost::system::error_code& error);
-    void SpawnGuiListener_();
-    void GuiAcceptHandler_(const boost::system::error_code& error);
+    TcpServer(uint16_t port);
+    void SpawnListener_();
+    void AcceptHandler_(const boost::system::error_code& error);
 
     std::string Read_(boost::asio::ip::tcp::socket &socket);
-    void Write_(boost::asio::ip::tcp::socket &socket, std::string &str);
+    void Write_(boost::asio::ip::tcp::socket &socket, const std::string &str);
 
     std::mutex lock_;
     std::queue<std::string> incoming_data_;
     std::string outgoing_data_{"WAIT"};
 
-    uint16_t port_robot_;
-    uint16_t port_gui_;
-
-    std::thread robot_thread_;
-    std::thread gui_thread_;
-    bool robot_stop_{false};
-    bool gui_stop_{false};
+    uint16_t port_;
+    std::shared_ptr<std::thread> thread_;
+    bool tcp_stop_{false};
 };
 
 #endif // TCPSERVER_H

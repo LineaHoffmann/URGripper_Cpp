@@ -8,10 +8,9 @@
 
 enum class MOTOR_CONTROL_ERROR_CODE {
     ALL_OK = 0x00,
-    OUT_OF_POSITION_RANGE = 0x01,
-    FORCE_ABOVE_MAX = 0x02,
+    INVALID_POSITION_RANGE = 0x01,
     NEGATIVE_VALUE = 0x03,
-    OUT_OF_POSITION_OFFSET_RANGE = 0x04,
+    FORCE_ABOVE_MAX = 04,
     NOT_INITIALIZED_CORRECTLY = 0x05
 };
 
@@ -35,17 +34,15 @@ public:
 
     // Force functions
     double getForce() const;
-    enum MOTOR_CONTROL_ERROR_CODE setMaxForce(double newMaxForce);
 
     // State getter
-    enum MOTOR_CONTROL_ERROR_CODE getState();
+    enum MOTOR_CONTROL_ERROR_CODE getState() const;
 
 private:
     // Initializer with shared pointer objects from main controller
-    // Hide constructor, copy-, and assignment operators in private
     MotorController(std::shared_ptr<L298>,std::shared_ptr<ADC0832>,std::shared_ptr<ADC0832>);
     //MotorController(const MotorController&);
-    MotorController& operator=(const MotorController&);
+    //MotorController& operator=(const MotorController&);
 
     // Controller state
     enum MOTOR_CONTROL_ERROR_CODE state_ = MOTOR_CONTROL_ERROR_CODE::NOT_INITIALIZED_CORRECTLY;
@@ -60,8 +57,11 @@ private:
     double forceFactor_;
     uint8_t forceOffset_;
 
-    // Move PWM ratio (of 20)
-    uint8_t move_ratio_{5};
+    // Force functions
+    enum MOTOR_CONTROL_ERROR_CODE setMaxForce(double newMaxForce);
+
+    // Jogging PWM ratio
+    uint8_t jog_ratio_;
 
     // Wheatstone
     unsigned int gain{1000}; //gain fra 1. stage

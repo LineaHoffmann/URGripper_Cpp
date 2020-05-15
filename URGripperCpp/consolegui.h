@@ -10,8 +10,9 @@
 #include <iomanip>
 #include <vector>
 
-#include <motorcontroller.h>
-#include <adc0832.h>
+#include "motorcontroller.h"
+#include "adc0832.h"
+#include "tcpserver.h"
 
 class ConsoleGUI
 {
@@ -57,11 +58,11 @@ public:
     // Adders for functionality blocks
     void AddComponent(std::shared_ptr<MotorController>);
     void AddComponent(std::shared_ptr<ADC0832>);
+    void AddComponent(std::shared_ptr<TcpServer>);
     // State window updater function
     void DrawState(unsigned long long);
-    // For streaming strings to the log window
-    friend ConsoleGUI& operator<<(ConsoleGUI& gui, const std::string str)
-    {gui.LogHelper(str); return gui;}
+    // For sending strings to the log window
+    friend ConsoleGUI& operator<<(ConsoleGUI& gui, const std::string str) {gui.LogHelper(str); return gui;}
 
 private:
     // Private constructor
@@ -77,5 +78,6 @@ private:
     std::shared_ptr<MotorController> motor_controller_ptr_;
     std::shared_ptr<ADC0832> adc_0_ptr_;
     std::shared_ptr<ADC0832> adc_1_ptr_;
+    std::shared_ptr<TcpServer> server_ptr_;
 };
 #endif // CONSOLEGUI_H

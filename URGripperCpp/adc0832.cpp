@@ -3,8 +3,15 @@
 
 #include "adc0832.h"
 
+/**
+ * @brief ADC0832::ADC0832
+ * @param n 0 or 1
+ * @param uwait approx clock in us
+ */
 ADC0832::ADC0832(uint8_t n, uint32_t uwait) :
     // Select pins based on n
+    // The validate fuction should cause an error if n
+    // is not 0 or 1, bause there are only these options.
     dout_((validate(n) == 0 ? 17 : 9),GPIO::GPIO_PULL::OFF,std::chrono::microseconds(10),std::chrono::microseconds(5)),
     din_((validate(n) == 0 ? 27 : 11)),
     clk_((validate(n) == 0 ? 22 : 5)),
@@ -13,9 +20,17 @@ ADC0832::ADC0832(uint8_t n, uint32_t uwait) :
     // Start all outputs low
     din_.off();clk_.off();cs_.off();
 }
+/**
+ * @brief ADC0832::readADC
+ * @param channel 0 or 1
+ * @return 5V mapped to [0:255]
+ */
 uint8_t ADC0832::readADC(uint8_t channel) {
     validate(channel);
-    rd_ = 0; // Reset from previous reading    
+    // See the datasheet for the timing diagram
+    // https://www.ti.com/lit/gpn/adc0832-n
+    rd_ = 0; // Reset from previous reading
+    // todo: implement sleep_until to eliminate time offset from code
     // Start clock low
     clk_.off();
     // Reset with CS high -> low
@@ -55,19 +70,32 @@ uint8_t ADC0832::readADC(uint8_t channel) {
         rd_ <<= 1; // Shift rd
         dout_.triggered(); // get_state doesn't work without calling this too? It's a bug.
         if (dout_.get_state()) {
-            rd_ |= 0x1; // Add one to rd_ if input if high
+            rd_ |= 0x1; // Add one to rd_ if input is high
         }
     }
     return rd_;
 }
+/**
+ * @brief ADC0832::readADC averaged
+ * @param channel 0 or 1
+ * @param samples
+ * @return 5V mapped to [0:255]
+ */
 uint8_t ADC0832::readADC(uint8_t channel, uint8_t samples) {
-    if (samples <= 0) return 0;
+    // We don't want 0, it does division later and inf is bad
+    if (samples == 0) return 0;
+    // Simple averaged read for error suppression, kinda
     uint16_t rdavg{0};
     for (uint8_t i = 0; i < samples; ++i) {
         rdavg += readADC(channel);
     }
     return rd_ = static_cast<uint8_t>(rdavg / samples);
 }
+/**
+ * @brief Validates if 0 or 1
+ * @param n
+ * @return not if it isn't..
+ */
 uint8_t ADC0832::validate(uint8_t n) {
     // If n is anything other than 0 or 1, it throws runtime error
     if (!(n == 0 || n == 1)) throw std::invalid_argument("Only channels 0 and 1 are available.");

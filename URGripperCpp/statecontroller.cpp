@@ -1,6 +1,7 @@
 #include "statecontroller.h"
 #include "tcpserver.h"
 #include "motorcontroller.h"
+#include "consolegui.h"
 #include <iostream>
 
 
@@ -96,7 +97,7 @@ std::string statecontroller::executeCommand()
            return "OK";
         }
     }
-    return "FAIL";
+    return "HALT";
 }
 
 

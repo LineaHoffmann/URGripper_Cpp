@@ -14,8 +14,8 @@
 /**
  * @brief For building static reference object
 */
-TcpServer& TcpServer::Build(uint16_t port_robot, uint16_t port_gui) {
-    static TcpServer server(port_robot, port_gui);
+TcpServer& TcpServer::Build(uint16_t port) {
+    static TcpServer server(port);
     return server;
 }
 /**
@@ -25,29 +25,25 @@ TcpServer::~TcpServer() {}
 /**
  * @brief Constructor
 */
-TcpServer::TcpServer(uint16_t port_robot,uint16_t port_gui) :
-    port_robot_{port_robot},
-    port_gui_{port_gui} {}
+TcpServer::TcpServer(uint16_t port) :
+    port_{port} {
+}
 /**
- * @brief Start listener and gui TCP threads
+ * @brief Start listener TCP thread
 */
 void TcpServer::Start() {
-    robot_thread_ = std::thread(&TcpServer::SpawnRobotListener_,this);
-    gui_thread_ = std::thread(&TcpServer::SpawnGuiListener_,this);
+    thread_ = std::make_shared<std::thread>(std::thread(&TcpServer::SpawnListener_,this));
     return;
 }
 /**
- * @brief Stop listener and gui TCP threads
+ * @brief Stop listener TCP thread
 */
 void TcpServer::Stop() {
     // Join the two extra threads
-    std::unique_lock<std::mutex> lock(lock_, std::try_to_lock);
-    while(!lock.owns_lock()) lock.try_lock();
-    gui_stop_ = true;
-    robot_stop_ = true;
-    lock.unlock();
-    gui_thread_.join();
-    robot_thread_.join();
+    std::unique_lock<std::mutex> lock(lock_,std::try_to_lock);
+    tcp_stop_ = true;
+    lock.~unique_lock();
+    thread_->join();
     return;
 }
 /**
@@ -75,18 +71,18 @@ void TcpServer::SetReply(const std::string &s) {
  * If client disconnects unexpectedly after accept, it crashes
  * todo: maybe catch this
 */
-void TcpServer::SpawnRobotListener_() {
+void TcpServer::SpawnListener_() {
     // Starting required IO services
     boost::asio::io_service io;
-    boost::asio::ip::tcp::acceptor acceptor(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port_robot_));
+    boost::asio::ip::tcp::acceptor acceptor(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port_));
     boost::asio::ip::tcp::socket socket(io);
     // Setup
     acceptor.non_blocking(true);
     boost::system::error_code err_code;
     acceptor.listen();
-    // Check robot_stop_
+    // Check tcp_stop_
     std::unique_lock<std::mutex> lock(lock_, std::try_to_lock);
-    bool stopFlag = robot_stop_;
+    bool stopFlag = tcp_stop_;
     lock.unlock();
     while (!stopFlag) {
         // Accept incomming request
@@ -94,37 +90,39 @@ void TcpServer::SpawnRobotListener_() {
         if (err_code.value() == 11) {
             // Request failed bacause of no peer
             // This happens because accept is non-blocking
-            // which we need to shut the thread when we want
-            while (!lock.owns_lock()) lock.try_lock();
-            stopFlag = robot_stop_;
-            lock.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            // which we need to kill the thread when we want
             continue;
-        }
-        if (err_code) {
+        } else if (err_code) {
             // Error has happened during accept, logging as incoming data
             while (!lock.owns_lock()) lock.try_lock();
             incoming_data_.push("TCP Error: " + err_code.message());
-            stopFlag = robot_stop_;
             lock.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
             continue;
         }
         // Read and write data
+        std::string rdData = Read_(socket);
         while (!lock.owns_lock()) lock.try_lock();
-        incoming_data_.push(Read_(socket));
-        Write_(socket, outgoing_data_);
-        outgoing_data_ = "WAIT";
-        stopFlag = robot_stop_;
+        if (rdData == "GUI") {
+            // This is our Windows GUI asking for data
+            // todo: handle this here
+            // This object will need a full set of "stuff"
+            // Construct a single string and use Write_ to send it
+            // Delimiter = ';'
+            // status, power, gripperdistance, clampingforce,
+            // adc3v3, adcPot, adcMotor, adcForce, new log lines
+        } else {
+            // If it isn't the GUI, we assume it's the robot
+            // Write the data from outgoing_data_ and reset it
+            Write_(socket, outgoing_data_);
+            outgoing_data_ = "WAIT";
+            // Log the incoming request to a buffer
+            incoming_data_.push(rdData);
+        }
+        // Get new state of stop flag
+        stopFlag = tcp_stop_;
         lock.unlock();
         socket.close();
     }
-    return;
-}
-/**
- * @brief todo: make this
- */
-void TcpServer::SpawnGuiListener_() {
     return;
 }
 /**
@@ -132,15 +130,14 @@ void TcpServer::SpawnGuiListener_() {
 */
 std::string TcpServer::Read_(boost::asio::ip::tcp::socket &socket) {
     boost::asio::streambuf buffer;
-    boost::asio::read_until(socket, buffer, "\n");
+    boost::asio::read_until(socket, buffer, "\0");
     std::string data = boost::asio::buffer_cast<const char*>(buffer.data());
     return data;
 }
 /**
  * @brief boost::asio type write to socket
 */
-void TcpServer::Write_(boost::asio::ip::tcp::socket &socket, std::string &str) {
-    const std::string msg = str;
-    boost::asio::write(socket, boost::asio::buffer(msg));
+void TcpServer::Write_(boost::asio::ip::tcp::socket &socket, const std::string &str) {
+    boost::asio::write(socket, boost::asio::buffer(str));
     return;
 }

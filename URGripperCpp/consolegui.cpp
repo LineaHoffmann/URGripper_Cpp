@@ -2,7 +2,7 @@
 #include <algorithm> // For some search and destroy in std::string
 
 /**
- * @brief Static function for building static reference object
+ * @brief Static function for building static singleton object
  */
 ConsoleGUI& ConsoleGUI::Build() {
     static ConsoleGUI gui;
@@ -21,48 +21,53 @@ ConsoleGUI::~ConsoleGUI() {
  * @brief GUI Constructor
  */
 ConsoleGUI::ConsoleGUI() {
-    // My default xterm window size
+    // My default xterm window size matches this
     state_window_.height = 24;
     state_window_.width = 40;
     log_window_.height = 24;
     log_window_.width = 40;
 
-    initscr();
-    noecho();
-    curs_set(0);
+    initscr();      // Screen initializer
+    noecho();       // No echo of user inputs
+    cbreak();       // Place break after each input ??
+    curs_set(0);    // Cursor be gone
 
-    timeout(0);
-    refresh();
+    timeout(0);     // No waiting
+    refresh();      // First refresh
 
+    // Left side window to display the log output
     log_window_.win = newwin(log_window_.height,log_window_.width,0,0);
     box(log_window_.win,0,0);
     mvwprintw(log_window_.win,0,13,"Controller Log");
     wrefresh(log_window_.win);
 
+    // Right side window to display the current state of affairs
     state_window_.win = newwin(state_window_.height,state_window_.width,0,state_window_.width);
     box(state_window_.win,0,0);
     mvwprintw(state_window_.win,0,12,"Controller State");
     wrefresh(state_window_.win);
 
-    // This only draws the labels for the State window
+    // This draws the labels for the State window
     // Writing ADC labels
-    // Labels to be corrected when final
+    // todo: Labels to be corrected when final
     mvwprintw(state_window_.win,2,2,"ADC READING");
     mvwprintw(state_window_.win,2,17,"VALUE");
-    mvwprintw(state_window_.win,3,2,"ADC 0,0:");
-    mvwprintw(state_window_.win,4,2,"ADC 0,1:");
-    mvwprintw(state_window_.win,5,2,"ADC 1,0:");
-    mvwprintw(state_window_.win,6,2,"ADC 1,1:");
+    mvwprintw(state_window_.win,3,2,"M.curr:");
+    mvwprintw(state_window_.win,4,2,"FFB:");
+    mvwprintw(state_window_.win,5,2,"POS:");
+    mvwprintw(state_window_.win,6,2,"3.3V:");
 
     // Writing error code labels
     mvwprintw(state_window_.win,8,2,"Error Codes");
-    mvwprintw(state_window_.win,10,2,"ADC 0:");
-    mvwprintw(state_window_.win,11,2,"ADC 1:");
-    mvwprintw(state_window_.win,12,2,"Motor:");
-    mvwprintw(state_window_.win,13,2,"Server:");
-    mvwprintw(state_window_.win,14,2,"Power:");
+    mvwprintw(state_window_.win,9,2,"Motor:");
+    mvwprintw(state_window_.win,10,2,"Server:");
+    mvwprintw(state_window_.win,11,2,"Power:");
 
-    // Writing misc. labels
+    // Position and force labels
+    mvwprintw(state_window_.win,14,2,"Pos [mm]:");
+    mvwprintw(state_window_.win,15,2,"Force [kg]:");
+
+    // Writing frame counter label
     mvwprintw(state_window_.win,state_window_.height-2,2,"Frame:");
 
 }
@@ -81,24 +86,30 @@ void ConsoleGUI::AddComponent(std::shared_ptr<ADC0832> ptr) {
     if (adc_1_ptr_ == nullptr) {adc_1_ptr_ = ptr;} return;
 }
 /**
+ * @brief Adding TCP server shared pointer
+ */
+void ConsoleGUI::AddComponent(std::shared_ptr<TcpServer> ptr) {
+    if (server_ptr_ == nullptr) {server_ptr_ = ptr;} return;
+}
+/**
  * @brief Redraws the data in the state window
  */
 void ConsoleGUI::DrawState(unsigned long long frame) {
     // A few defines for better readability
     // May change in final version
-#define rd_force     adc_0_ptr_->readADC(0);
-#define rd_position  adc_0_ptr_->readADC(1);
-#define rd_current   adc_1_ptr_->readADC(0);
+#define rd_current   adc_0_ptr_->readADC(0);
+#define rd_force     adc_0_ptr_->readADC(1);
+#define rd_position  adc_1_ptr_->readADC(0);
 #define rd_3v3       adc_1_ptr_->readADC(1);
 
     // Get data from ADC pointers
     std::array<uint8_t, 4> temp_adc{0};
-    temp_adc[0] = rd_force;
-    temp_adc[1] = rd_position;
-    temp_adc[2] = rd_current;
+    temp_adc[0] = rd_current;
+    temp_adc[1] = rd_force;
+    temp_adc[2] = rd_position;
     temp_adc[3] = rd_3v3;
 
-    // Convert to char* string and write uint8_t style value
+    // Convert to char* type string and write uint8_t style value
     // Padding with zeroes in front to make 3 digits
     for (uint i = 0; i < temp_adc.size(); ++i) {
         mvwprintw(state_window_.win,3+static_cast<int>(i),17,Uint8ToStr(temp_adc[i]).c_str());
@@ -108,23 +119,32 @@ void ConsoleGUI::DrawState(unsigned long long frame) {
     MOTOR_CONTROL_ERROR_CODE moCtrlErr = motor_controller_ptr_->getState();
     // Print accordingly
     if (moCtrlErr == MOTOR_CONTROL_ERROR_CODE::ALL_OK) {
-        mvwprintw(state_window_.win,12,17,"OK");
+        mvwprintw(state_window_.win,9,17,"OK ");
     } else {
-        mvwprintw(state_window_.win,12,17,"ERR");
+        mvwprintw(state_window_.win,9,17,"ERR");
     }
 
-    // Get TCP Server error code
-    //
-    //
+    // todo: Get TCP Server error code
+    // It doesn't make one, and we have no access to it
+    // Space is reserved here tho
+    mvwprintw(state_window_.win,10,17,"IDK");
 
     // Get 3.3V rail, measurement at exact 3.3V is 3.05V = 155-156;
     // Limit chosen as +-5% [147 - 164]
     if (temp_adc[3] <= 164 && temp_adc[3] >= 147) {
-        mvwprintw(state_window_.win,14,17,"OK");
+        mvwprintw(state_window_.win,11,17,"OK ");
     } else {
-        mvwprintw(state_window_.win,14,17,"ERR");
+        mvwprintw(state_window_.win,11,17,"ERR");
     }
 
+    // Print calculated position in mm
+    double pos = motor_controller_ptr_->getPosition();
+    mvwprintw(state_window_.win, 14, 17, std::to_string(pos).c_str());
+    // Print calculated force in kg
+    double force = motor_controller_ptr_->getForce();
+    mvwprintw(state_window_.win, 15, 17, std::to_string(force).c_str());
+
+    // Print frame counter
     mvwprintw(state_window_.win, state_window_.height - 2, 9, std::to_string(frame).c_str());
     // Refresh screen with updates
     wrefresh(state_window_.win);
@@ -165,8 +185,9 @@ void ConsoleGUI::LogHelper(std::string str) {
         ts += " ";
     }
     for (uint i = 0; i < ConsoleGUI::log_window_.buf.size(); ++i) {
+        // Print empty line
         mvwprintw(ConsoleGUI::log_window_.win,static_cast<int>(i+1),1,ts.c_str());
-        // Print new line
+        // Print actual line
         mvwprintw(ConsoleGUI::log_window_.win,static_cast<int>(i+1),1,ConsoleGUI::log_window_.buf.get(i).c_str());
     }
     // Refresh the log window
