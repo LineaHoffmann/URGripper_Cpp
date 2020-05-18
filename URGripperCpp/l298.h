@@ -13,7 +13,9 @@ public:
     void setDirection(unsigned int d);
 private:
     L298();
-    L298& operator=(const L298&);
+    // Explicit delete of copy constructor and assignment operator
+    L298(const L298&) = delete;
+    L298& operator=(const L298&) = delete;
 
     static GPIO::DigitalOut in1,in2;
     static GPIO::PWMOut en;

@@ -33,13 +33,13 @@ public:
 
     //shared pointer
 //    void AddMsg(std::shared_ptr<TcpServer> ptr);
-    void AddMotorcontroller(std::shared_ptr<MotorController>);
+    void AddMotorcontroller(MotorController&);
 
 
 private:
      enum command{open = 1, close = 2, status = 3};
      CommandBuffer commandBuffer;
-     std::shared_ptr<MotorController> motorController_ptr_;
+     MotorController *motorController_ptr_;
 
 
     //shared pointer TODO Få den til at virke.

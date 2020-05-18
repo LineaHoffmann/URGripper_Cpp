@@ -53,12 +53,15 @@ class ConsoleGUI
 public:
     // For building the console object
     static ConsoleGUI& Build();
+    // Explicit delete of copy constructor and assignment operator
+    ConsoleGUI(const ConsoleGUI&) = delete;
+    ConsoleGUI& operator=(const ConsoleGUI&) = delete;
     // Destructor for cleaning after ncurses
     virtual ~ConsoleGUI();
     // Adders for functionality blocks
-    void AddComponent(std::shared_ptr<MotorController>);
-    void AddComponent(std::shared_ptr<ADC0832>);
-    void AddComponent(std::shared_ptr<TcpServer>);
+    void AddComponent(MotorController&);
+    //void AddComponent(ADC0832&);
+    void AddComponent(TcpServer&);
     // State window updater function
     void DrawState(unsigned long long);
     // For sending strings to the log window
@@ -75,9 +78,9 @@ private:
     Window state_window_;
     Window log_window_;
     // Storage for the pointers given during controller startup
-    std::shared_ptr<MotorController> motor_controller_ptr_;
-    std::shared_ptr<ADC0832> adc_0_ptr_;
-    std::shared_ptr<ADC0832> adc_1_ptr_;
-    std::shared_ptr<TcpServer> server_ptr_;
+    MotorController *motor_controller_ptr_;
+    //ADC0832 *adc_0_ptr_;
+    //ADC0832 *adc_1_ptr_;
+    TcpServer *server_ptr_;
 };
 #endif // CONSOLEGUI_H

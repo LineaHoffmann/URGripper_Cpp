@@ -12,7 +12,7 @@
 */
 
 /**
- * @brief For building static reference object
+ * @brief For building static singleton
 */
 TcpServer& TcpServer::Build(uint16_t port) {
     static TcpServer server(port);
@@ -28,22 +28,32 @@ TcpServer::~TcpServer() {}
 TcpServer::TcpServer(uint16_t port) :
     port_{port} {
 }
+
+/**
+ * @brief
+*/
+void TcpServer::AddComponent(MotorController& controller) {
+    motor_controller_ptr_ = &controller;
+}
+
 /**
  * @brief Start listener TCP thread
 */
 void TcpServer::Start() {
-    thread_ = std::make_shared<std::thread>(std::thread(&TcpServer::SpawnListener_,this));
+    thread_ = std::thread(&TcpServer::SpawnListener_,this);
     return;
 }
 /**
  * @brief Stop listener TCP thread
 */
 void TcpServer::Stop() {
-    // Join the two extra threads
+    // Join the extra thread
     std::unique_lock<std::mutex> lock(lock_,std::try_to_lock);
+    state_ = SERVER_ERROR_CODE::STOPPING;
     tcp_stop_ = true;
     lock.~unique_lock();
-    thread_->join();
+    thread_.join();
+    state_ = SERVER_ERROR_CODE::STOPPED;
     return;
 }
 /**
@@ -82,6 +92,7 @@ void TcpServer::SpawnListener_() {
     acceptor.listen();
     // Check tcp_stop_
     std::unique_lock<std::mutex> lock(lock_, std::try_to_lock);
+    state_ = SERVER_ERROR_CODE::RUNNING;
     bool stopFlag = tcp_stop_;
     lock.unlock();
     while (!stopFlag) {
@@ -91,8 +102,9 @@ void TcpServer::SpawnListener_() {
             // Request failed bacause of no peer
             // This happens because accept is non-blocking
             // which we need to kill the thread when we want
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
             continue;
-        } else if (err_code) {
+        } else if (err_code.value()) {
             // Error has happened during accept, logging as incoming data
             while (!lock.owns_lock()) lock.try_lock();
             incoming_data_.push("TCP Error: " + err_code.message());
@@ -100,7 +112,16 @@ void TcpServer::SpawnListener_() {
             continue;
         }
         // Read and write data
-        std::string rdData = Read_(socket);
+        std::string rdData;
+        try {
+            // Catching errors like disconnection
+            rdData = Read_(socket);
+        } catch (std::exception& e) {
+            std::string str = "Error: ";
+            str.append(e.what());
+            incoming_data_.push(str);
+        }
+        //std::string rdData = Read_(socket);
         while (!lock.owns_lock()) lock.try_lock();
         if (rdData == "GUI") {
             // This is our Windows GUI asking for data
@@ -110,6 +131,35 @@ void TcpServer::SpawnListener_() {
             // Delimiter = ';'
             // status, power, gripperdistance, clampingforce,
             // adc3v3, adcPot, adcMotor, adcForce, new log lines
+            lock.unlock();
+            std::array<uint8_t,4> adc_reads = (*motor_controller_ptr_).getADCs();
+            MOTOR_CONTROL_ERROR_CODE mo_err = motor_controller_ptr_->getState();
+            std::stringstream rtn_sstream;
+            // Motor controller status
+            if (mo_err == MOTOR_CONTROL_ERROR_CODE::ALL_OK) {
+                rtn_sstream << "OK;";
+            } else {
+                rtn_sstream << "ERR;";
+            }
+            // 3.3V power status
+            if (adc_reads.at(3) <= 156*1.05 && adc_reads.at(3) >= 155*0.95) {
+                rtn_sstream << "OK;";
+            } else {
+                rtn_sstream << "ERR;";
+            }
+            // Gripper distance double
+            rtn_sstream << motor_controller_ptr_->getPosition() << ";";
+            // Clamping force double
+            rtn_sstream << motor_controller_ptr_->getForce() << ";";
+            // ADCs in 3.3v, pos, current, force order
+            rtn_sstream << std::to_string(adc_reads.at(3)) << ";"
+                        << std::to_string(adc_reads.at(0)) << ";"
+                        << std::to_string(adc_reads.at(2)) << ";"
+                        << std::to_string(adc_reads.at(1)) << ";";
+            // Log lines?
+            // This should only be the new lines, and should be handled elsewhere?
+            rtn_sstream << incoming_data_.front();
+            Write_(socket,rtn_sstream.str().c_str());
         } else {
             // If it isn't the GUI, we assume it's the robot
             // Write the data from outgoing_data_ and reset it
@@ -118,18 +168,29 @@ void TcpServer::SpawnListener_() {
             // Log the incoming request to a buffer
             incoming_data_.push(rdData);
         }
+
         // Get new state of stop flag
         stopFlag = tcp_stop_;
-        lock.unlock();
+        if (lock.operator bool()) lock.unlock();
         socket.close();
     }
+    state_ = SERVER_ERROR_CODE::STOPPING;
     return;
 }
+
+/**
+*
+*/
+SERVER_ERROR_CODE TcpServer::GetState() const {
+    return state_;
+}
+
 /**
  * @brief boost::asio type read from socket
 */
 std::string TcpServer::Read_(boost::asio::ip::tcp::socket &socket) {
     boost::asio::streambuf buffer;
+    boost::system::error_code error;
     boost::asio::read_until(socket, buffer, "\0");
     std::string data = boost::asio::buffer_cast<const char*>(buffer.data());
     return data;

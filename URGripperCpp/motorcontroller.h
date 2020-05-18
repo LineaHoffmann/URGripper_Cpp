@@ -1,7 +1,10 @@
 #ifndef MOTORCONTROLLER_H
 #define MOTORCONTROLLER_H
 
+#include <array>
 #include <memory>
+#include <mutex>    // For thread safe read/writes
+#include <thread>   // Multithreading
 
 #include "adc0832.h"
 #include "l298.h"
@@ -14,13 +17,22 @@ enum class MOTOR_CONTROL_ERROR_CODE {
     NOT_INITIALIZED_CORRECTLY = 0x05
 };
 
+// For easier accecs to hardware data
+struct GripperState {
+
+    uint8_t Voltage3v3Val;
+    uint8_t PositionVal;
+    uint8_t CurrentVal;
+    uint8_t ForceVal;
+};
+
 class MotorController {
 public:
     // Function for creating singleton instance of object
-    static MotorController& buildController(std::shared_ptr<L298>,std::shared_ptr<ADC0832>,std::shared_ptr<ADC0832>);
+    static MotorController& buildController(L298&, ADC0832&, ADC0832&);
 
     // No destructor required (yet)
-    //virtual ~MotorController();
+    //~MotorController();
 
     // Move command
     // takes new position in [mm] and max force in [kg]
@@ -36,16 +48,22 @@ public:
     double getForce() const;
 
     // State getter
-    enum MOTOR_CONTROL_ERROR_CODE getState() const;
+    enum MOTOR_CONTROL_ERROR_CODE getState();
+
+    // ADC information getter
+    std::array<uint8_t,4> getADCs();
 
 private:
     // Initializer with shared pointer objects from main controller
-    MotorController(std::shared_ptr<L298>,std::shared_ptr<ADC0832>,std::shared_ptr<ADC0832>);
-    //MotorController(const MotorController&);
-    //MotorController& operator=(const MotorController&);
+    MotorController(L298&, ADC0832&, ADC0832&);
+    // Explicit delete of copy constructor and assignment operator
+    MotorController(const MotorController&) = delete;
+    MotorController& operator=(const MotorController&) = delete;
 
-    // Controller state
+    // Controller state code
     enum MOTOR_CONTROL_ERROR_CODE state_ = MOTOR_CONTROL_ERROR_CODE::NOT_INITIALIZED_CORRECTLY;
+    // Controller state struct
+    GripperState state_struct_;
 
     // Position variables
     double positionFactor_;
@@ -55,6 +73,7 @@ private:
     // Force variables
     uint8_t maxForce_;
     double forceFactor_;
+    uint8_t forceThreshold_;
     uint8_t forceOffset_;
 
     // Force functions
@@ -69,15 +88,21 @@ private:
     double slope {37.918}; // skal ændres efter korrekt graf.
     unsigned int force;
 
-    // Shared pointers to hardware from main controller
-    std::shared_ptr<L298> driver_;
-    std::shared_ptr<ADC0832> adc0_;
-    std::shared_ptr<ADC0832> adc1_;
+    // hardware
+    L298 *driver_;
+    ADC0832 *adc0_;
+    ADC0832 *adc1_;
 
+    void SpawnAdcReader_();
+    std::thread adc_thread_;
+    std::mutex lock_;
     // Helper functions for ADC reading
     uint8_t adcPosition_() const;
     uint8_t adcCurrent_() const;
     uint8_t adcForce_() const;
+    uint8_t adc3v3_() const;
+    // Variables for holding last read
+    uint8_t rdPos_, rdCurrent_, rdForce_, rd3v3_;
 };
 
 #endif // MOTORCONTROLLER_H

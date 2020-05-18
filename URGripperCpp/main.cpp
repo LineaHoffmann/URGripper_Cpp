@@ -10,9 +10,9 @@
 int main() {
     // This line should be run if not running on R-Pi
     // Doesn't really seem to work tho?
-/*#ifndef __arm__
+#ifndef __arm__
     GPIO::GPIOBase::simulation(true);
-#endif*/
+#endif
 
     // Time keeping for State Window framerate
     using Framerate = std::chrono::duration<std::chrono::steady_clock::rep,std::ratio<1,60>>;
@@ -25,9 +25,8 @@ int main() {
 
     // This "stream" isn't perfect
     // gui << "" << ""; will make separate lines (for now?)
-    gui << "Hello, Console here.";
-    gui << "This stream wraps long lines for you, like a gentleman.";
-    gui << "Press 'y' to continue. To stop again, press 'x'.";
+    gui << "Hello, this is the logging console for the UR gripper.";
+    gui << "Press 'y' to continue. To stop, press 'x'.";
     // getch is from ncurses.h
     // It check for keyboard char, doesn't wait
     while(getch() != 'y') {};
@@ -35,7 +34,6 @@ int main() {
     // Driver Enable pin has soft PWM at ~500Hz
     // PWM dutycycle range is [0,20] in integers
     L298& driver = L298::buildL298();
-    std::shared_ptr<L298> driverPtr = std::make_shared<L298>(driver);
     gui << "L298 Driver initialized";
 
     // Creating two ADC0832 hardware objects
@@ -44,30 +42,26 @@ int main() {
     // Clocks outside 10kHz-400kHz are not guaranteed in datasheet
     ADC0832 adc0(0);
     ADC0832 adc1(1);
-    std::shared_ptr<ADC0832> adc0Ptr = std::make_shared<ADC0832>(adc0);
-    std::shared_ptr<ADC0832> adc1Ptr = std::make_shared<ADC0832>(adc1);
-    gui.AddComponent(adc0Ptr);
-    gui.AddComponent(adc1Ptr);
+//    gui.AddComponent(adc0);
+//    gui.AddComponent(adc1);
     gui << "ADCs initialized";
 
     // Creating Motor Controller object
     // This takes three shared pointers, 1xL298 + 2xADC0832
-    MotorController& motorControl = MotorController::buildController(driverPtr,adc0Ptr,adc1Ptr);
-    std::shared_ptr<MotorController> motorControlPtr = std::make_shared<MotorController>(motorControl);
-    gui.AddComponent(motorControlPtr);
+    MotorController& motorControl = MotorController::buildController(driver,adc0,adc1);
+    gui.AddComponent(motorControl);
     gui << "Motor Controller initialized";
 
     // TCP Server
     TcpServer& server = TcpServer::Build(12321);
-    //std::shared_ptr<TcpServer> serverPtr = std::make_shared<TcpServer>(server);
-    //gui.AddComponent(serverPtr);
-    //serverPtr->Start();
+    gui.AddComponent(server);
+    server.AddComponent(motorControl);
     server.Start();
     gui << "TCP Server starting on port 12321";
 
     //Statecontroller
     statecontroller stateControl;
-    stateControl.AddMotorcontroller(motorControlPtr);
+    stateControl.AddMotorcontroller(motorControl);
 
     while (1) {
         // This is the freerunning program loop
@@ -83,21 +77,36 @@ int main() {
         // For testing
         case 'w':
             gui << "Moving to 50mm";
-            motorControlPtr->move(50,0);
+            motorControl.move(50,0);
             break;
         case 'a':
             gui << "Moving to 40mm";
-            motorControlPtr->move(40,0);
+            motorControl.move(40,0);
             break;
         case 's':
             gui << "Moving to 25mm and force 20?";
-            motorControlPtr->move(25,20);
+            motorControl.move(25,20);
             break;
         case 'd':
             gui << "Moving to 5mm and force 20?";
-            motorControlPtr->move(5,24);
+            motorControl.move(5,24);
             break;
-
+        case '1':
+            gui << "Moving to 20mm, 0";
+            motorControl.move(20,0);
+            break;
+        case '2':
+            gui << "Moving to 20mm, 2";
+            motorControl.move(20,2);
+            break;
+        case '3':
+            gui << "Moving to 20mm, 4";
+            motorControl.move(20,4);
+            break;
+        case '4':
+            gui << "Moving to 20mm, 6";
+            motorControl.move(20,6);
+            break;
         }
 
         // Get message from server object
@@ -105,11 +114,16 @@ int main() {
         if (msg != "") {
             // Statecontroller "setup"
             stateControl.readCommand(msg);
-            // Print message to console gui
-            msg.insert(0,"Client: ");
-            gui << msg;
+            if (msg != "ST;") {
+                // Print message to console gui
+                msg.insert(0,"Client: ");
+                gui << msg;
+            }
+
             // Execute the state controller and send the return value
-            server.SetReply(stateControl.executeCommand());
+            std::string str = stateControl.executeCommand();
+            gui << str;
+            server.SetReply(str);
         }
 
         // This part handles State window drawing

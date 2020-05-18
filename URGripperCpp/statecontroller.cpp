@@ -101,8 +101,8 @@ std::string statecontroller::executeCommand()
 }
 
 
-void statecontroller::AddMotorcontroller(std::shared_ptr<MotorController> motor_ptr)
+void statecontroller::AddMotorcontroller(MotorController& motorController)
 {
-    motorController_ptr_ = motor_ptr;
+    motorController_ptr_ = &motorController;
 }
 

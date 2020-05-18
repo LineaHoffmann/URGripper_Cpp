@@ -52,9 +52,9 @@ ConsoleGUI::ConsoleGUI() {
     // todo: Labels to be corrected when final
     mvwprintw(state_window_.win,2,2,"ADC READING");
     mvwprintw(state_window_.win,2,17,"VALUE");
-    mvwprintw(state_window_.win,3,2,"M.curr:");
-    mvwprintw(state_window_.win,4,2,"FFB:");
-    mvwprintw(state_window_.win,5,2,"POS:");
+    mvwprintw(state_window_.win,3,2,"FFB:");
+    mvwprintw(state_window_.win,4,2,"POS:");
+    mvwprintw(state_window_.win,5,2,"CURR:");
     mvwprintw(state_window_.win,6,2,"3.3V:");
 
     // Writing error code labels
@@ -74,40 +74,33 @@ ConsoleGUI::ConsoleGUI() {
 /**
  * @brief Adding MotorController shared pointer
  */
-void ConsoleGUI::AddComponent(std::shared_ptr<MotorController> ptr) {
-    if (motor_controller_ptr_ == nullptr) motor_controller_ptr_ = ptr;
+void ConsoleGUI::AddComponent(MotorController& ptr) {
+    if (motor_controller_ptr_ == nullptr) motor_controller_ptr_ = &ptr;
     return;
 }
 /**
  * @brief Adding ADC0832 shared pointer
  */
-void ConsoleGUI::AddComponent(std::shared_ptr<ADC0832> ptr) {
-    if (adc_0_ptr_ == nullptr) {adc_0_ptr_ = ptr; return;}
-    if (adc_1_ptr_ == nullptr) {adc_1_ptr_ = ptr;} return;
-}
+//void ConsoleGUI::AddComponent(ADC0832& ptr) {
+//    if (adc_0_ptr_ == nullptr) {adc_0_ptr_ = &ptr; return;}
+//    if (adc_1_ptr_ == nullptr) {adc_1_ptr_ = &ptr;} return;
+//}
 /**
  * @brief Adding TCP server shared pointer
  */
-void ConsoleGUI::AddComponent(std::shared_ptr<TcpServer> ptr) {
-    if (server_ptr_ == nullptr) {server_ptr_ = ptr;} return;
+void ConsoleGUI::AddComponent(TcpServer& ptr) {
+    if (server_ptr_ == nullptr) {server_ptr_ = &ptr;} return;
 }
 /**
  * @brief Redraws the data in the state window
  */
 void ConsoleGUI::DrawState(unsigned long long frame) {
-    // A few defines for better readability
-    // May change in final version
-#define rd_current   adc_0_ptr_->readADC(0);
-#define rd_force     adc_0_ptr_->readADC(1);
-#define rd_position  adc_1_ptr_->readADC(0);
-#define rd_3v3       adc_1_ptr_->readADC(1);
-
-    // Get data from ADC pointers
-    std::array<uint8_t, 4> temp_adc{0};
-    temp_adc[0] = rd_current;
-    temp_adc[1] = rd_force;
-    temp_adc[2] = rd_position;
-    temp_adc[3] = rd_3v3;
+    // Get data from ADCs
+    std::array<uint8_t, 4> temp_adc = motor_controller_ptr_->getADCs();
+//    uint8_t rd_force = temp_adc.at(0);
+//    uint8_t rd_position = temp_adc.at(1);
+//    uint8_t rd_current = temp_adc.at(2);
+    uint8_t rd_3v3 = temp_adc.at(3);
 
     // Convert to char* type string and write uint8_t style value
     // Padding with zeroes in front to make 3 digits
@@ -124,14 +117,17 @@ void ConsoleGUI::DrawState(unsigned long long frame) {
         mvwprintw(state_window_.win,9,17,"ERR");
     }
 
-    // todo: Get TCP Server error code
-    // It doesn't make one, and we have no access to it
-    // Space is reserved here tho
-    mvwprintw(state_window_.win,10,17,"IDK");
+    // Get server error code
+    SERVER_ERROR_CODE serverErr = server_ptr_->GetState();
+    if (serverErr == SERVER_ERROR_CODE::RUNNING) {
+        mvwprintw(state_window_.win,10,17,"OK ");
+    } else {
+        mvwprintw(state_window_.win,10,17,"ERR");
+    }
 
-    // Get 3.3V rail, measurement at exact 3.3V is 3.05V = 155-156;
+    // Get 3.3V rail, measurement at 3.3V is 3.05V = 155-156;
     // Limit chosen as +-5% [147 - 164]
-    if (temp_adc[3] <= 164 && temp_adc[3] >= 147) {
+    if (rd_3v3 <= 156*1.05 && rd_3v3 >= 155*0.95) {
         mvwprintw(state_window_.win,11,17,"OK ");
     } else {
         mvwprintw(state_window_.win,11,17,"ERR");
