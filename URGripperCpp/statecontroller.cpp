@@ -33,7 +33,7 @@ void statecontroller::readCommand(const std::string& command)
         commandArray[i++] = temp;
     }
     commandBuffer.beginningState = commandArray[0]; //hvis den er andet end OP el. CL. Så skal resten af commandBuffer Nulls.
-    if (commandArray[0] == "OP" || commandArray[0] == "CL")
+    if (commandBuffer.beginningState == "OP" || commandBuffer.beginningState == "CL")
     {
         commandBuffer.byForce = static_cast<bool>(std::stoi(commandArray[1])); //cast from
         commandBuffer.byDistance = static_cast<bool>(std::stoi(commandArray[2]));
@@ -46,17 +46,16 @@ void statecontroller::readCommand(const std::string& command)
         commandBuffer.forceValue = 0;
         commandBuffer.distanceValue = 0;
     }
-
     return;
 }
 
 std::string statecontroller::executeCommand()
 {
     //ST - Status, should we do something?
-    // This is handled by other code? NOTE
+    // If we read an "ST" here, it means we're stationary again
     if(commandBuffer.beginningState == "ST")
     {
-        return "WAIT";
+        return "OK";
     }
 
     // OP - Open
@@ -66,8 +65,9 @@ std::string statecontroller::executeCommand()
         motorController_ptr_ ->move(commandBuffer.distanceValue, commandBuffer.forceValue);
         if(motorController_ptr_->getState() == MOTOR_CONTROL_ERROR_CODE::ALL_OK)
         {
-
             return "OK";
+        } else {
+            return "HALT";
         }
     }
 
@@ -77,24 +77,45 @@ std::string statecontroller::executeCommand()
         if (!commandBuffer.byForce && !commandBuffer.byDistance)
         {
             // Not much happens here.
+            if(motorController_ptr_->getState() == MOTOR_CONTROL_ERROR_CODE::ALL_OK)
+            {
+                return "OK";
+            } else {
+                return "HALT";
+            }
         }
 
         if (!commandBuffer.byForce && commandBuffer.byDistance)
         {
             motorController_ptr_->move(commandBuffer.distanceValue,0.0);
-            return "OK";
+            if(motorController_ptr_->getState() == MOTOR_CONTROL_ERROR_CODE::ALL_OK)
+            {
+                return "OK";
+            } else {
+                return "HALT";
+            }
         }
 
         if (commandBuffer.byForce && !commandBuffer.byDistance)
         {
             motorController_ptr_->move(0.0,commandBuffer.forceValue); //Er ligeglad med position. Håber på at ramme noget.(tryg)
-            return "OK";
+            if(motorController_ptr_->getState() == MOTOR_CONTROL_ERROR_CODE::ALL_OK)
+            {
+                return "OK";
+            } else {
+                return "HALT";
+            }
         }
 
         if (commandBuffer.byForce && commandBuffer.byDistance)
         {
            motorController_ptr_->move(commandBuffer.distanceValue, commandBuffer.forceValue);
-           return "OK";
+           if(motorController_ptr_->getState() == MOTOR_CONTROL_ERROR_CODE::ALL_OK)
+           {
+               return "OK";
+           } else {
+               return "HALT";
+           }
         }
     }
     return "HALT";
