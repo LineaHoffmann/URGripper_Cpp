@@ -84,28 +84,28 @@ int main() {
             motorControl.move(40,0);
             break;
         case 's':
-            gui << "Moving to 25mm and force 20?";
+            gui << "Moving to 25mm and force 20";
             motorControl.move(25,20);
             break;
         case 'd':
-            gui << "Moving to 5mm and force 20?";
+            gui << "Moving to 5mm and force 24";
             motorControl.move(5,24);
             break;
         case '1':
-            gui << "Moving to 20mm, 0";
-            motorControl.move(20,0);
+            gui << "Moving to 5mm, 0";
+            motorControl.move(5,0);
             break;
         case '2':
-            gui << "Moving to 20mm, 2";
-            motorControl.move(20,2);
+            gui << "Moving to 5mm, 5";
+            motorControl.move(5,5);
             break;
         case '3':
-            gui << "Moving to 20mm, 4";
-            motorControl.move(20,4);
+            gui << "Moving to 5mm, 10";
+            motorControl.move(5,10);
             break;
         case '4':
-            gui << "Moving to 20mm, 6";
-            motorControl.move(20,6);
+            gui << "Moving to 5mm, 15";
+            motorControl.move(5,15);
             break;
         }
 

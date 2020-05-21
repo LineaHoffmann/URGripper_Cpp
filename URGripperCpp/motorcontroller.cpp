@@ -163,6 +163,6 @@ void MotorController::SpawnAdcReader_() {
 }
 // ADC helper functions
 uint8_t MotorController::adcPosition_() const {return adc1_->readADC(0);}
-uint8_t MotorController::adcForce_() const {return adc0_->readADC(1);}
+uint8_t MotorController::adcForce_() const {return adc0_->readADC(1,4);}
 uint8_t MotorController::adcCurrent_() const {return adc0_->readADC(0);}
 uint8_t MotorController::adc3v3_() const {return adc1_->readADC(1);}

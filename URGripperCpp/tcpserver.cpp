@@ -190,7 +190,6 @@ SERVER_ERROR_CODE TcpServer::GetState() const {
 */
 std::string TcpServer::Read_(boost::asio::ip::tcp::socket &socket) {
     boost::asio::streambuf buffer;
-    boost::system::error_code error;
     boost::asio::read_until(socket, buffer, "\0");
     std::string data = boost::asio::buffer_cast<const char*>(buffer.data());
     return data;
