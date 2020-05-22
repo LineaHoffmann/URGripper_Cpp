@@ -72,21 +72,21 @@ ConsoleGUI::ConsoleGUI() {
 
 }
 /**
- * @brief Adding MotorController shared pointer
+ * @brief Adding MotorController reference
  */
 void ConsoleGUI::AddComponent(MotorController& ptr) {
     if (motor_controller_ptr_ == nullptr) motor_controller_ptr_ = &ptr;
     return;
 }
 /**
- * @brief Adding ADC0832 shared pointer
+ * @brief Adding ADC0832 reference
  */
 //void ConsoleGUI::AddComponent(ADC0832& ptr) {
 //    if (adc_0_ptr_ == nullptr) {adc_0_ptr_ = &ptr; return;}
 //    if (adc_1_ptr_ == nullptr) {adc_1_ptr_ = &ptr;} return;
 //}
 /**
- * @brief Adding TCP server shared pointer
+ * @brief Adding TCP server reference
  */
 void ConsoleGUI::AddComponent(TcpServer& ptr) {
     if (server_ptr_ == nullptr) {server_ptr_ = &ptr;} return;

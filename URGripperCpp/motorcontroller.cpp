@@ -13,7 +13,7 @@ MotorController& MotorController::buildController(L298& driver, ADC0832& adc0, A
     return controller;
 }
 MotorController::MotorController(L298& driver, ADC0832& adc0, ADC0832& adc1){
-    // Binding pointers to member variables
+    // Binding references to member pointer variables
     driver_ = &driver;
     adc0_ = &adc0;
     adc1_ = &adc1;

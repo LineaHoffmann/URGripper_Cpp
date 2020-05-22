@@ -47,7 +47,7 @@ int main() {
     gui << "ADCs initialized";
 
     // Creating Motor Controller object
-    // This takes three shared pointers, 1xL298 + 2xADC0832
+    // This takes three references, 1xL298 + 2xADC0832
     MotorController& motorControl = MotorController::buildController(driver,adc0,adc1);
     gui.AddComponent(motorControl);
     gui << "Motor Controller initialized";
